@@ -35,6 +35,7 @@ struct ChatMessage: Codable {
 struct ChatCompletionRequest: Codable {
     let model: String
     let messages: [ChatMessage]
+    let temperature: Double? 
 }
 
 // Chat completion response

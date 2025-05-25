@@ -89,7 +89,11 @@ class OpenAIService {
         }
     }
     
-    func chatCompletion(messages: [ChatMessage], completion: @escaping (Result<String, AppError>) -> Void) {
+    func chatCompletion(
+        messages: [ChatMessage],
+        temperature: Double = 0.7,
+        completion: @escaping (Result<String, AppError>) -> Void
+    ) {
         guard !apiKey.isEmpty else {
             completion(.failure(.missingAPIKey))
             return
@@ -104,7 +108,8 @@ class OpenAIService {
         
         let chatRequest = ChatCompletionRequest(
             model: ModelConfig.llmModel,
-            messages: messages
+            messages: messages,
+            temperature: temperature
         )
         
         do {
@@ -149,21 +154,30 @@ class OpenAIService {
         task.resume()
     }
     
-    func translateText(text: String, targetLanguage: String, completion: @escaping (Result<String, AppError>) -> Void) {
+    func translateText(
+        text: String,
+        targetLanguage: String,
+        temperature: Double = 1.0,
+        completion: @escaping (Result<String, AppError>) -> Void
+    ) {
         let messages = [
             ChatMessage(role: .system, content: "You are a helpful translation assistant."),
             ChatMessage(role: .user, content: "Translate the following text to \(targetLanguage):\n\n\(text)")
         ]
         
-        chatCompletion(messages: messages, completion: completion)
+        chatCompletion(messages: messages, temperature: temperature, completion: completion)
     }
     
-    func improveText(text: String, completion: @escaping (Result<String, AppError>) -> Void) {
+    func improveText(
+        text: String,
+        temperature: Double = 1.0,
+        completion: @escaping (Result<String, AppError>) -> Void
+    ) {
         let messages = [
             ChatMessage(role: .system, content: "You are a writing improvement assistant. Please improve the following text by correcting grammar, enhancing clarity, and making it more coherent while maintaining the original meaning."),
             ChatMessage(role: .user, content: text)
         ]
         
-        chatCompletion(messages: messages, completion: completion)
+        chatCompletion(messages: messages, temperature: temperature, completion: completion)
     }
 }

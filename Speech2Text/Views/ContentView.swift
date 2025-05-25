@@ -1,9 +1,12 @@
 import SwiftUI
-import UIKit // Added for UIPasteboard
+import UIKit // for UIPasteboard in copy functionality
 
 struct ContentView: View {
     @StateObject private var viewModel = SpeechViewModel()
     
+    private let temperatureOptions: [Double] = (0...10).map { Double($0) / 10.0 }
+
+
     var body: some View {
         VStack(spacing: 16) {
             // Title
@@ -11,33 +14,50 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.top)
-            
-            // Language selection
-            Picker("Language", selection: $viewModel.selectedLanguage) {
-                ForEach(viewModel.supportedLanguages, id: \.self) { language in
-                    Text(language.name).tag(language)
+
+            // Language picker + Temperature control
+            HStack(spacing: 0) {
+                // Language picker
+                Picker("Language", selection: $viewModel.selectedLanguage) {
+                    ForEach(viewModel.supportedLanguages, id: \.self) { lang in
+                        Text(lang.name).tag(lang)
+                    }
                 }
+                .pickerStyle(MenuPickerStyle())
+                .frame(maxWidth: .infinity)
+
+                // Temperature picker as a compact menu showing current value
+                Picker(selection: $viewModel.temperature) {
+                    // MODIFY THIS ForEach:
+                    ForEach(temperatureOptions, id: \.self) { value in
+                        Text(String(format: "%.1f", value)).tag(value)
+                    }
+                } label: { // This part remains the same
+                    Text(String(format: "%.1f", viewModel.temperature))
+                }
+                .pickerStyle(MenuPickerStyle())
+                .frame(maxWidth: .infinity)
             }
-            .pickerStyle(MenuPickerStyle())
             .padding(.horizontal)
-            
+            .frame(height: 44)
+
             // Waveform when recording
             if viewModel.isRecording {
                 WaveformView(audioLevelMonitor: viewModel.audioService.audioLevelMonitor)
                     .transition(.opacity)
                     .animation(.easeInOut, value: viewModel.isRecording)
             }
-            
+
             // Text boxes
             textBoxes
-            
-            // Primary Buttons: Record, Translate, Improve (icons only)
+
+            // Primary Buttons: Record, Translate, Improve
             primaryButtonRow
-            
-            // Secondary Buttons: Clear, Replace, and Copy functions
+
+            // Secondary Buttons: Clear, Replace, Copy
             secondaryButtonRow
-            
-            // Success message for copy
+
+            // Copy success message
             if viewModel.showCopySuccess {
                 Text("Text copied to clipboard!")
                     .foregroundColor(.green)
@@ -45,7 +65,7 @@ struct ContentView: View {
                     .padding(.top, 4)
                     .transition(.opacity)
             }
-            
+
             // Error message
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
@@ -56,24 +76,26 @@ struct ContentView: View {
             }
         }
         .padding()
-        // Dismiss the keyboard when tapping outside the text boxes
+        // Dismiss keyboard on tap outside
         .onTapGesture {
-            self.hideKeyboard()
+            hideKeyboard()
         }
-        // Add a "Done" button on the keyboard toolbar
+        // “Done” button above keyboard
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
-                    self.hideKeyboard()
+                    hideKeyboard()
                 }
             }
         }
     }
-    
+
+    // MARK: – Subviews
+
     private var textBoxes: some View {
         VStack(spacing: 16) {
-            // Original text box
+            // Original text
             VStack(alignment: .leading) {
                 Text("Original Text")
                     .font(.headline)
@@ -82,13 +104,11 @@ struct ContentView: View {
                     .padding(8)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray, lineWidth: 1)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray, lineWidth: 1))
             }
-            
-            // Processed text box
+
+            // Processed text
             VStack(alignment: .leading) {
                 Text("Processed Text")
                     .font(.headline)
@@ -97,18 +117,15 @@ struct ContentView: View {
                     .padding(8)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray, lineWidth: 1)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray, lineWidth: 1))
             }
         }
     }
-    
-    // Primary button row with icons only
+
     private var primaryButtonRow: some View {
         HStack(spacing: 12) {
-            // Record button
+            // Record / Stop
             Button(action: viewModel.toggleRecording) {
                 Image(systemName: viewModel.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                     .font(.system(size: 40))
@@ -116,8 +133,8 @@ struct ContentView: View {
             }
             .buttonStyle(PrimaryButtonStyle(isDestructive: viewModel.isRecording))
             .disabled(viewModel.isProcessing)
-            
-            // Translate button
+
+            // Translate
             Button(action: viewModel.translateText) {
                 Image(systemName: "globe")
                     .font(.system(size: 40))
@@ -125,8 +142,8 @@ struct ContentView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(viewModel.isProcessing || viewModel.speechText.originalText.isEmpty)
-            
-            // Improve button
+
+            // Improve
             Button(action: viewModel.improveText) {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 40))
@@ -150,11 +167,10 @@ struct ContentView: View {
             }
         )
     }
-    
-    // Secondary button row for Clear, Replace, and Copy functions
+
     private var secondaryButtonRow: some View {
         HStack(spacing: 12) {
-            // Clear button
+            // Clear
             Button(action: viewModel.clearText) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 40))
@@ -162,8 +178,8 @@ struct ContentView: View {
             }
             .buttonStyle(PrimaryButtonStyle(isDestructive: true))
             .disabled(viewModel.isProcessing)
-            
-            // Replace button
+
+            // Replace
             Button(action: viewModel.replaceText) {
                 Image(systemName: "arrow.left.arrow.right.circle.fill")
                     .font(.system(size: 40))
@@ -171,8 +187,8 @@ struct ContentView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(viewModel.isProcessing || viewModel.speechText.processedText.isEmpty)
-            
-            // Copy button
+
+            // Copy
             Button(action: viewModel.copyProcessedText) {
                 Image(systemName: "doc.on.doc.fill")
                     .font(.system(size: 40))

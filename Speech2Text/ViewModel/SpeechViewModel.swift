@@ -9,6 +9,7 @@ class SpeechViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var selectedLanguage: Language
     @Published var showCopySuccess = false
+    @Published var temperature: Double = 0.7
     
     let supportedLanguages = [
         Language(name: "English", code: "en"),
@@ -92,7 +93,8 @@ class SpeechViewModel: ObservableObject {
         
         openAIService.translateText(
             text: speechText.originalText,
-            targetLanguage: selectedLanguage.name
+            targetLanguage: selectedLanguage.name,
+            temperature: temperature
         ) { [weak self] result in
             guard let self = self else { return }
             
@@ -118,7 +120,10 @@ class SpeechViewModel: ObservableObject {
         isProcessing = true
         errorMessage = nil
         
-        openAIService.improveText(text: speechText.originalText) { [weak self] result in
+        openAIService.improveText(
+            text: speechText.originalText,
+            temperature: temperature
+        ) { [weak self] result in
             guard let self = self else { return }
             
             DispatchQueue.main.async {
