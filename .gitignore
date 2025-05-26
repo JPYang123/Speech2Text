@@ -1,1 +1,4 @@
 .DS_Store
+# Ignore Word temp and backup files
+~$*.docx
+*.docx
