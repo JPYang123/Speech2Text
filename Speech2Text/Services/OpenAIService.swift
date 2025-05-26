@@ -156,28 +156,43 @@ class OpenAIService {
     
     func translateText(
         text: String,
-        targetLanguage: String,
+        targetLanguageName: String, // e.g., "Chinese"
+        targetLanguageCode: String, // e.g., "zh"
         temperature: Double = 1.0,
         completion: @escaping (Result<String, AppError>) -> Void
     ) {
+        var finalTargetLanguageDescription = targetLanguageName
+        // If the target language is Chinese, specify Simplified Chinese.
+        if targetLanguageCode == "zh" { // Assuming "zh" is your code for Chinese [cite: 96]
+            finalTargetLanguageDescription = "Simplified Chinese"
+        }
+
         let messages = [
-            ChatMessage(role: .system, content: "You are a helpful translation assistant."),
-            ChatMessage(role: .user, content: "Translate the following text to \(targetLanguage):\n\n\(text)")
+            ChatMessage(role: .system, content: "You are a helpful translation assistant."), // [cite: 82]
+            ChatMessage(role: .user, content: "Translate the following text to \(finalTargetLanguageDescription):\n\n\(text)") // [cite: 82]
         ]
-        
+
         chatCompletion(messages: messages, temperature: temperature, completion: completion)
     }
-    
+
     func improveText(
         text: String,
-        temperature: Double = 1.0,
+        originalTextLanguageCode: String, // e.g., "zh" if the original text is Chinese
+        temperature: Double = 1.0, // [cite: 83]
         completion: @escaping (Result<String, AppError>) -> Void
     ) {
+        var systemPrompt = "You are a writing improvement assistant. Please improve the following text by correcting grammar, enhancing clarity, and making it more coherent while maintaining the original meaning." // [cite: 84]
+
+        // If the original text is in Chinese, instruct the LLM to output in Simplified Chinese.
+        if originalTextLanguageCode == "zh" {
+            systemPrompt += " Ensure the improved text is in Simplified Chinese."
+        }
+
         let messages = [
-            ChatMessage(role: .system, content: "You are a writing improvement assistant. Please improve the following text by correcting grammar, enhancing clarity, and making it more coherent while maintaining the original meaning."),
-            ChatMessage(role: .user, content: text)
+            ChatMessage(role: .system, content: systemPrompt),
+            ChatMessage(role: .user, content: text) // [cite: 84]
         ]
-        
+
         chatCompletion(messages: messages, temperature: temperature, completion: completion)
     }
 }

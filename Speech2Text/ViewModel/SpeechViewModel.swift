@@ -58,25 +58,27 @@ class SpeechViewModel: ObservableObject {
     
     private func stopRecording() {
         isProcessing = true
-        
+
         guard let audioFileURL = audioService.stopRecording() else {
-            errorMessage = "Failed to get recording file"
+            errorMessage = "Failed to get recording file" // [cite: 100]
             isProcessing = false
             return
         }
-        
+
         // Transcribe the audio
-        openAIService.transcribeAudio(fileURL: audioFileURL) { [weak self] result in
-            guard let self = self else { return }
-            
+        openAIService.transcribeAudio(fileURL: audioFileURL) { [weak self] result in // [cite: 100]
+            guard let self = self else { return } // [cite: 101]
+
             DispatchQueue.main.async {
                 self.isProcessing = false
-                
+
                 switch result {
                 case .success(let transcribedText):
-                    self.speechText.originalText = transcribedText
+                    // Apply the correction here
+                    let correctedText = self.correctCommonMistranscriptions(text: transcribedText)
+                    self.speechText.originalText = correctedText // [cite: 102]
                 case .failure(let error):
-                    self.errorMessage = error.description
+                    self.errorMessage = error.description // [cite: 102]
                 }
             }
         }
@@ -87,53 +89,57 @@ class SpeechViewModel: ObservableObject {
             errorMessage = "No text to translate"
             return
         }
-        
-        isProcessing = true
-        errorMessage = nil
-        
+
+        isProcessing = true // [cite: 104]
+        errorMessage = nil // [cite: 104]
+
         openAIService.translateText(
             text: speechText.originalText,
-            targetLanguage: selectedLanguage.name,
-            temperature: temperature
-        ) { [weak self] result in
-            guard let self = self else { return }
-            
+            targetLanguageName: selectedLanguage.name, // Pass the name for general display if needed by prompt
+            targetLanguageCode: selectedLanguage.code,  // Pass the code for specific logic
+            temperature: temperature // [cite: 104]
+        ) { [weak self] result in // [cite: 104]
+            guard let self = self else { return } // [cite: 105]
+
             DispatchQueue.main.async {
-                self.isProcessing = false
-                
-                switch result {
-                case .success(let translatedText):
-                    self.speechText.processedText = translatedText
-                case .failure(let error):
-                    self.errorMessage = error.description
+                self.isProcessing = false // [cite: 105]
+                switch result { // [cite: 106]
+                case .success(let translatedText): // [cite: 106]
+                    self.speechText.processedText = translatedText // [cite: 106]
+                case .failure(let error): // [cite: 106]
+                    self.errorMessage = error.description // [cite: 107]
                 }
             }
         }
     }
-    
+
     func improveText() {
         guard !speechText.originalText.isEmpty else {
             errorMessage = "No text to improve"
             return
         }
-        
-        isProcessing = true
-        errorMessage = nil
-        
+
+        isProcessing = true // [cite: 108]
+        errorMessage = nil // [cite: 108]
+
+        // Assuming selectedLanguage reflects the language of originalText for improvement purposes.
+        // If originalText could be a different language than selectedLanguage (e.g., after translation),
+        // you might need a more sophisticated way to determine originalTextLanguageCode.
+        // For now, we use selectedLanguage.code.
         openAIService.improveText(
             text: speechText.originalText,
-            temperature: temperature
-        ) { [weak self] result in
-            guard let self = self else { return }
-            
+            originalTextLanguageCode: selectedLanguage.code,
+            temperature: temperature // [cite: 108]
+        ) { [weak self] result in // [cite: 108]
+            guard let self = self else { return } // [cite: 109]
+
             DispatchQueue.main.async {
-                self.isProcessing = false
-                
-                switch result {
-                case .success(let improvedText):
-                    self.speechText.processedText = improvedText
-                case .failure(let error):
-                    self.errorMessage = error.description
+                self.isProcessing = false // [cite: 109]
+                switch result { // [cite: 109]
+                case .success(let improvedText): // [cite: 110]
+                    self.speechText.processedText = improvedText // [cite: 110]
+                case .failure(let error): // [cite: 110]
+                    self.errorMessage = error.description // [cite: 111]
                 }
             }
         }
@@ -170,5 +176,37 @@ class SpeechViewModel: ObservableObject {
                 self?.showCopySuccess = false
             }
         }
+    }
+    
+    private func correctCommonMistranscriptions(text: String) -> String {
+        // Define your dictionary of common misinterpretations and their correct versions.
+        // Add more known misinterpretations here as you discover them.
+        let corrections = [
+            "十位": "石卫",
+            "时位": "石卫",
+            "思维": "石卫",
+            "死位": "石卫",
+            "炎炎": "燕燕",
+            "彦彦": "燕燕",
+            "艳艳": "燕燕",
+            "林林": "琳琳",
+            "玲玲": "琳琳",
+            "淋淋": "琳琳",
+            "凛凛": "琳琳",
+            "时洪": "石红",
+            // e.g., "another common error": "its correction"
+        ]
+
+        var correctedText = text
+        for (incorrect, correct) in corrections {
+            // For case-sensitive replacement:
+            correctedText = correctedText.replacingOccurrences(of: incorrect, with: correct)
+            
+            // If you need case-insensitive replacement, you might need a more complex approach
+            // using NSRegularExpression, or by lowercasing both the text and the keys
+            // for comparison, but being careful with the actual replacement.
+            // For simplicity, this example is case-sensitive.
+        }
+        return correctedText
     }
 }
