@@ -10,6 +10,7 @@ class SpeechViewModel: ObservableObject {
     @Published var selectedLanguage: Language
     @Published var showCopySuccess = false
     @Published var temperature: Double = 0.7
+    @Published var customCorrections: [String: String] = [:]
     
     let supportedLanguages = [
         Language(name: "English", code: "en"),
@@ -28,11 +29,16 @@ class SpeechViewModel: ObservableObject {
     let audioService = AudioService()
     
     private let openAIService = OpenAIService()
+    private let correctionManager = CorrectionManager.shared
     
     init() {
         // Default language is English
         selectedLanguage = supportedLanguages[0]
-        
+
+        // Load user-defined corrections
+        customCorrections = correctionManager.corrections
+        correctionManager.$corrections.assign(to: &$customCorrections)
+
         // Bind to audio service recording state
         audioService.$isRecording
             .assign(to: &$isRecording)
@@ -177,35 +183,21 @@ class SpeechViewModel: ObservableObject {
             }
         }
     }
-    
-    private func correctCommonMistranscriptions(text: String) -> String {
-        // Define your dictionary of common misinterpretations and their correct versions.
-        // Add more known misinterpretations here as you discover them.
-        let corrections = [
-            "十位": "石卫",
-            "时位": "石卫",
-            "思维": "石卫",
-            "死位": "石卫",
-            "炎炎": "燕燕",
-            "彦彦": "燕燕",
-            "艳艳": "燕燕",
-            "林林": "琳琳",
-            "玲玲": "琳琳",
-            "淋淋": "琳琳",
-            "凛凛": "琳琳",
-            "时洪": "石红",
-            // e.g., "another common error": "its correction"
-        ]
 
+    // MARK: - User Corrections Management
+
+    func addCorrection(incorrect: String, correct: String) {
+        correctionManager.addCorrection(incorrect: incorrect, correct: correct)
+    }
+
+    func removeCorrection(for incorrect: String) {
+        correctionManager.removeCorrection(for: incorrect)
+    }
+
+    private func correctCommonMistranscriptions(text: String) -> String {
         var correctedText = text
-        for (incorrect, correct) in corrections {
-            // For case-sensitive replacement:
+        for (incorrect, correct) in customCorrections {
             correctedText = correctedText.replacingOccurrences(of: incorrect, with: correct)
-            
-            // If you need case-insensitive replacement, you might need a more complex approach
-            // using NSRegularExpression, or by lowercasing both the text and the keys
-            // for comparison, but being careful with the actual replacement.
-            // For simplicity, this example is case-sensitive.
         }
         return correctedText
     }
