@@ -3,6 +3,7 @@ import UIKit // for UIPasteboard in copy functionality
 
 struct ContentView: View {
     @StateObject private var viewModel = SpeechViewModel()
+    @State private var showCorrectionManager = false
     
     private let temperatureOptions: [Double] = (0...10).map { Double($0) / 10.0 }
 
@@ -88,6 +89,9 @@ struct ContentView: View {
                     hideKeyboard()
                 }
             }
+        }
+        .sheet(isPresented: $showCorrectionManager) {
+            ManageCorrectionsView()
         }
     }
 
@@ -196,6 +200,15 @@ struct ContentView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(viewModel.isProcessing || viewModel.speechText.processedText.isEmpty)
+            
+            // Manage Corrections
+            Button(action: { showCorrectionManager = true }) {
+                Image(systemName: "text.book.closed")
+                    .font(.system(size: 40))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(viewModel.isProcessing)
         }
     }
 }
