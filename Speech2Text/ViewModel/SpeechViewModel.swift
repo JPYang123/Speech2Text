@@ -184,26 +184,6 @@ class SpeechViewModel: ObservableObject {
         }
     }
     
-//    private func correctCommonMistranscriptions(text: String) -> String {
-//        // Define your dictionary of common misinterpretations and their correct versions.
-//        // Add more known misinterpretations here as you discover them.
-//        let corrections = [
-//            "十位": "石卫",
-//            "时位": "石卫",
-//            "思维": "石卫",
-//            "死位": "石卫",
-//            "炎炎": "燕燕",
-//            "彦彦": "燕燕",
-//            "艳艳": "燕燕",
-//            "研研": "燕燕",
-//            "林林": "琳琳",
-//            "玲玲": "琳琳",
-//            "淋淋": "琳琳",
-//            "凛凛": "琳琳",
-//            "时洪": "石红",
-//            // e.g., "another common error": "its correction"
-//        ]
-
     // MARK: - User Corrections Management
 
     func addCorrection(incorrect: String, correct: String) {
