@@ -17,7 +17,7 @@ struct WaveformView: View {
                     BarView(value: audioLevelMonitor.soundSamples[index])
                 }
             }
-            .frame(height: 100)
+            .frame(height: 24)
             .padding()
         }
     }
