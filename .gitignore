@@ -2,3 +2,6 @@
 # Ignore Word temp and backup files
 ~$*.docx
 *.docx
+# 忽略 Xcode 用户界面状态
+**/xcuserdata/
+
