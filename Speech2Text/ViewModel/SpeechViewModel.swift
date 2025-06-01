@@ -38,7 +38,7 @@ class SpeechViewModel: ObservableObject {
         // Load user-defined corrections
         customCorrections = correctionManager.corrections
         correctionManager.$corrections.assign(to: &$customCorrections)
-
+        
         // Bind to audio service recording state
         audioService.$isRecording
             .assign(to: &$isRecording)
@@ -159,7 +159,9 @@ class SpeechViewModel: ObservableObject {
     
     // Function to replace the original text with the processed text
     func replaceText() {
+        let tempText = speechText.originalText
         speechText.originalText = speechText.processedText
+        speechText.processedText = tempText
     }
     
     // Function to copy the processed text to clipboard
@@ -185,7 +187,7 @@ class SpeechViewModel: ObservableObject {
     }
 
     // MARK: - User Corrections Management
-
+    
     func addCorrection(incorrect: String, correct: String) {
         correctionManager.addCorrection(incorrect: incorrect, correct: correct)
     }
