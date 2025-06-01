@@ -159,7 +159,9 @@ class SpeechViewModel: ObservableObject {
     
     // Function to replace the original text with the processed text
     func replaceText() {
+        let tempText = speechText.originalText
         speechText.originalText = speechText.processedText
+        speechText.processedText = tempText
     }
     
     // Function to copy the processed text to clipboard
