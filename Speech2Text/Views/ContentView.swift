@@ -4,6 +4,7 @@ import UIKit // for UIPasteboard in copy functionality
 struct ContentView: View {
     @StateObject private var viewModel = SpeechViewModel()
     @State private var showCorrectionManager = false
+    @State private var showAPIKeyView = false
     
     private let temperatureOptions: [Double] = (0...10).map { Double($0) / 10.0 }
 
@@ -134,6 +135,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showCorrectionManager) {
             ManageCorrectionsView()
+        }
+        .sheet(isPresented: $showAPIKeyView) {
+            APIKeyView()
         }
     }
 
@@ -303,6 +307,17 @@ struct ContentView: View {
             }
             .buttonStyle(SecondaryButtonStyle(
                 color: .teal,
+                isDisabled: viewModel.isProcessing
+            ))
+            .disabled(viewModel.isProcessing)
+            
+            // API Key
+            Button(action: { showAPIKeyView = true }) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 26))
+            }
+            .buttonStyle(SecondaryButtonStyle(
+                color: .gray,
                 isDisabled: viewModel.isProcessing
             ))
             .disabled(viewModel.isProcessing)

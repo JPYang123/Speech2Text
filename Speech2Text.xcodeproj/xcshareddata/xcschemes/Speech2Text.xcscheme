@@ -50,13 +50,6 @@
             ReferencedContainer = "container:Speech2Text.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "OPENAI_API_KEY"
-            value = "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"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

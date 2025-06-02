@@ -8,14 +8,18 @@ import SwiftUI
 struct APIConfig {
     // For a real app, you'd want to store this securely
     static var openAIKey: String {
-        // First try to get from environment
+        // Prefer an environment variable so the key isn't stored in source control
         if let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {
             return envKey
         }
         
-        // Add your key here for development purposes only
-        // Don't include this in production code or source control
-        return "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"
+        // Fall back to a key the user saved in UserDefaults via the settings UI
+        if let savedKey = UserDefaults.standard.string(forKey: "OpenAIAPIKey") {
+            return savedKey
+        }
+
+        // No key available
+        return ""
     }
 }
 
