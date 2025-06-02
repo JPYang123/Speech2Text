@@ -4,4 +4,5 @@
 *.docx
 # 忽略 Xcode 用户界面状态
 **/xcuserdata/
-
+echo "*.xcuserstate" >> .gitignore
+echo "Speech2Text.xcodeproj/project.xcworkspace/xcuserdata/" >> .gitignore
