@@ -36,8 +36,8 @@ class SpeechViewModel: ObservableObject {
         selectedLanguage = supportedLanguages[0]
 
         // Load user-defined corrections
-         customCorrections = correctionManager.corrections
-         correctionManager.$corrections.assign(to: &$customCorrections)
+        customCorrections = correctionManager.corrections
+        correctionManager.$corrections.assign(to: &$customCorrections)
         
         // Bind to audio service recording state
         audioService.$isRecording
@@ -185,9 +185,9 @@ class SpeechViewModel: ObservableObject {
             }
         }
     }
-    
-    // MARK: - User Corrections Management
 
+    // MARK: - User Corrections Management
+    
     func addCorrection(incorrect: String, correct: String) {
         correctionManager.addCorrection(incorrect: incorrect, correct: correct)
     }
@@ -195,7 +195,7 @@ class SpeechViewModel: ObservableObject {
     func removeCorrection(for incorrect: String) {
         correctionManager.removeCorrection(for: incorrect)
     }
-    
+
     private func correctCommonMistranscriptions(text: String) -> String {
         var correctedText = text
         for (incorrect, correct) in customCorrections {
