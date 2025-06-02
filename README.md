@@ -32,7 +32,7 @@ Speech2Text/
 ## Setup
 
 1. Clone the repository and open `Speech2Text.xcodeproj` in Xcode.
-2. Provide your OpenAI API key. The app reads the key from the environment variable `OPENAI_API_KEY` or the placeholder in `APIConfig.openAIKey` (`Models.swift` lines 7‑19). **Do not commit real keys to source control.**
+2. Provide your OpenAI API key. You can either set the environment variable `OPENAI_API_KEY` in your run scheme or enter the key from the new **API Key** screen inside the app (it stores the key in `UserDefaults`). **Do not commit real keys to source control.**
 3. Build and run on a device or simulator.
 
 ## Usage
