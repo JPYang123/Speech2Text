@@ -22,6 +22,8 @@
 		548518AF2D90B16D0010B445 /* WaveformConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548518AE2D90B16D0010B445 /* WaveformConfig.swift */; };
 		548518B12D90B1CA0010B445 /* AudioLevelMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548518B02D90B1CA0010B445 /* AudioLevelMonitor.swift */; };
 		548518B32D90B2720010B445 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548518B22D90B2720010B445 /* WaveformView.swift */; };
+		54BD96602DEDF6C600B25BBF /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BD965F2DEDF6C600B25BBF /* OnboardingView.swift */; };
+		54BD96622DEE025F00B25BBF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BD96612DEE025F00B25BBF /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +43,8 @@
 		548518AE2D90B16D0010B445 /* WaveformConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformConfig.swift; sourceTree = "<group>"; };
 		548518B02D90B1CA0010B445 /* AudioLevelMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLevelMonitor.swift; sourceTree = "<group>"; };
 		548518B22D90B2720010B445 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
+		54BD965F2DEDF6C600B25BBF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		54BD96612DEE025F00B25BBF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -128,6 +132,8 @@
 				548518B22D90B2720010B445 /* WaveformView.swift */,
 				547521F32DE41CDD002311FE /* ManageCorrectionView.swift */,
 				5480DB5B2DED538F00C0C617 /* APIKeyView.swift */,
+				54BD965F2DEDF6C600B25BBF /* OnboardingView.swift */,
+				54BD96612DEE025F00B25BBF /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -202,6 +208,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				54BD96622DEE025F00B25BBF /* SettingsView.swift in Sources */,
 				5480DB5C2DED538F00C0C617 /* APIKeyView.swift in Sources */,
 				5485189B2D9085E10010B445 /* Models.swift in Sources */,
 				547521F42DE41CDD002311FE /* ManageCorrectionView.swift in Sources */,
@@ -215,6 +222,7 @@
 				548518AA2D90901C0010B445 /* AudioService.swift in Sources */,
 				547521F22DE41A22002311FE /* CorrectionManager.swift in Sources */,
 				548518A62D908A920010B445 /* OpenAIModels.swift in Sources */,
+				54BD96602DEDF6C600B25BBF /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

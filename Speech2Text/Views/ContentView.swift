@@ -3,8 +3,7 @@ import UIKit // for UIPasteboard in copy functionality
 
 struct ContentView: View {
     @StateObject private var viewModel = SpeechViewModel()
-    @State private var showCorrectionManager = false
-    @State private var showAPIKeyView = false
+    @State private var showSettings = false
     
     private let temperatureOptions: [Double] = (0...10).map { Double($0) / 10.0 }
 
@@ -23,30 +22,12 @@ struct ContentView: View {
                 )
                 .padding(.top)
 
-            // Language picker + Temperature control (without labels)
+            // Language picker
             HStack(spacing: 12) {
-                // Language picker
                 Picker("Language", selection: $viewModel.selectedLanguage) {
                     ForEach(viewModel.supportedLanguages, id: \.self) { lang in
                         Text(lang.name).tag(lang)
                     }
-                }
-                .pickerStyle(MenuPickerStyle())
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .frame(maxWidth: .infinity)
-
-                // Temperature picker
-                Picker(selection: $viewModel.temperature) {
-                    ForEach(temperatureOptions, id: \.self) { value in
-                        Text(String(format: "%.1f", value)).tag(value)
-                    }
-                } label: {
-                    Text(String(format: "%.1f", viewModel.temperature))
-                        .font(.system(.body, design: .monospaced))
-                        .fontWeight(.medium)
                 }
                 .pickerStyle(MenuPickerStyle())
                 .padding(.horizontal, 12)
@@ -133,11 +114,8 @@ struct ContentView: View {
                 .foregroundColor(.blue)
             }
         }
-        .sheet(isPresented: $showCorrectionManager) {
-            ManageCorrectionsView()
-        }
-        .sheet(isPresented: $showAPIKeyView) {
-            APIKeyView()
+        .sheet(isPresented: $showSettings) {
+            SettingsView(viewModel: viewModel)
         }
     }
 
@@ -300,20 +278,9 @@ struct ContentView: View {
             ))
             .disabled(viewModel.isProcessing || viewModel.speechText.processedText.isEmpty)
             
-            // Manage Corrections
-            Button(action: { showCorrectionManager = true }) {
-                Image(systemName: "text.book.closed")
-                    .font(.system(size: 26))
-            }
-            .buttonStyle(SecondaryButtonStyle(
-                color: .teal,
-                isDisabled: viewModel.isProcessing
-            ))
-            .disabled(viewModel.isProcessing)
-            
-            // API Key
-            Button(action: { showAPIKeyView = true }) {
-                Image(systemName: "key.fill")
+            // Settings
+            Button(action: { showSettings = true }) {
+                Image(systemName: "gearshape.fill")
                     .font(.system(size: 26))
             }
             .buttonStyle(SecondaryButtonStyle(

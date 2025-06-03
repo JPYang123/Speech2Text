@@ -9,7 +9,11 @@ class SpeechViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var selectedLanguage: Language
     @Published var showCopySuccess = false
-    @Published var temperature: Double = 0.7
+    @Published var temperature: Double {
+        didSet {
+            UserDefaults.standard.set(temperature, forKey: "temperature")
+        }
+    }
     @Published var customCorrections: [String: String] = [:]
     
     let supportedLanguages = [
@@ -34,7 +38,8 @@ class SpeechViewModel: ObservableObject {
     init() {
         // Default language is English
         selectedLanguage = supportedLanguages[0]
-
+        temperature = UserDefaults.standard.object(forKey: "temperature") as? Double ?? 0.7
+        
         // Load user-defined corrections
         customCorrections = correctionManager.corrections
         correctionManager.$corrections.assign(to: &$customCorrections)

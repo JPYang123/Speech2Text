@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct Speech2TextApp: App {
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasSeenOnboarding {
+                ContentView()
+            } else {
+                OnboardingView()
+            }
         }
     }
 }

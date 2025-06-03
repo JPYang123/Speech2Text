@@ -9,6 +9,9 @@ struct APIKeyView: View {
         NavigationView {
             Form {
                 Section(header: Text("OpenAI API Key")) {
+                    Text("Create a key at platform.openai.com and paste it below.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
                     SecureField("sk-...", text: $apiKey)
                     Button("Save") {
                         UserDefaults.standard.set(apiKey, forKey: "OpenAIAPIKey")
