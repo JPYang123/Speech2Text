@@ -9,8 +9,9 @@ Speech2Text is an iOS voice assistant built with SwiftUI. It records spoken audi
 - **Text Translation & Improvement** – Translate the transcription into different languages or improve the wording using GPT models (`SpeechViewModel.swift` lines 92‑151).
 - **Custom Corrections** – Maintain a list of user‑defined correction pairs stored in JSON. Managed in `CorrectionManager.swift`.
 - **Clipboard Copy** – The Copy button places the processed text on the clipboard for easy sharing.
+- **Text to Speech** – Listen to results with the built-in **Speak** option using either Apple's system voices or OpenAI's TTS API.
 - **Temperature Control** – Adjust the OpenAI response creativity from the Settings screen.
-- **UI** – A SwiftUI interface with text boxes, waveform visualization and buttons for recording, translating, improving and managing corrections (`ContentView.swift`).
+- **UI** – A SwiftUI interface with text boxes, waveform visualization and buttons for recording, translating, improving, speaking and managing corrections (`ContentView.swift`).
 - **Onboarding** – A short animated guide explains the main actions. It shows automatically on first launch and can be replayed from **Settings > Quick Guide** (`OnboardingView.swift`).
 
 ## Project Structure
@@ -44,8 +45,9 @@ Upon first launch the app presents an animated walkthrough of these steps (you c
 1. Tap **Record** to start capturing audio. A waveform and timer display the current recording.
 2. Tap **Stop** to transcribe. The transcription appears in the *Original Text* field.
 3. Use **Translate** or **Improve** to process the text. Results appear in the *Processed Text* field.
-4. Tap **Copy** to place the processed text on the clipboard.
-5. Use **Settings** to manage custom corrections, adjust the response temperature, or set your API key.
+4. Tap **Speak** to hear the processed text using the selected TTS engine.
+5. Tap **Copy** to place the processed text on the clipboard.
+6. Use **Settings** to manage custom corrections, choose the TTS engine, adjust the response temperature, or set your API key.
 
 ## Notes
 
