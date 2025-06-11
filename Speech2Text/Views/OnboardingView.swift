@@ -18,6 +18,11 @@ struct OnboardingView: View {
             icon: "waveform"
         ),
         OnboardingStep(
+            title: "OpenAI API Key",
+            message: "Create an API key at platform.openai.com and enter it under Settings > Set OpenAI API Key.",
+            icon: "key.fill"
+        ),
+        OnboardingStep(
             title: "Record",
             message: "Tap the Record button to start capturing audio.",
             icon: "mic.circle.fill"
@@ -28,14 +33,14 @@ struct OnboardingView: View {
             icon: "wand.and.stars"
         ),
         OnboardingStep(
+            title: "Speak Text",
+            message: "Tap the Speak button to listen to the processed text with text to speech.",
+            icon: "speaker.wave.2.fill"
+        ),
+        OnboardingStep(
             title: "Copy Results",
             message: "Use the Copy button to put the processed text on the clipboard.",
             icon: "doc.on.doc.fill"
-        ),
-        OnboardingStep(
-            title: "OpenAI API Key",
-            message: "Create a free key at platform.openai.com and enter it under Settings > API Key.",
-            icon: "key.fill"
         ),
         OnboardingStep(
             title: "Manage Corrections",
