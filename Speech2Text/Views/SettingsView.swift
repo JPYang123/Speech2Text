@@ -25,6 +25,15 @@ struct SettingsView: View {
                             .frame(width: 44)
                     }
                 }
+                
+                Section(header: Text("Text to Speech")) {
+                    Picker("Engine", selection: $viewModel.ttsOption) {
+                        ForEach(TTSOption.allCases) { option in
+                            Text(option.displayName).tag(option)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
             }
             .navigationTitle("Settings")
             .toolbar {

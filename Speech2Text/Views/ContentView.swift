@@ -173,15 +173,10 @@ struct ContentView: View {
         HStack(spacing: 14) {
             // Record / Stop
             Button(action: viewModel.toggleRecording) {
-                VStack(spacing: 4) { // Reduced spacing from 6 to 4
-                    Image(systemName: viewModel.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.system(size: 24)) // Reduced from 28 to 24
-                    Text(viewModel.isRecording ? "Stop" : "Record")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
+                Image(systemName: viewModel.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                      .font(.system(size: 26))
             }
-            .buttonStyle(ModernButtonStyle(
+            .buttonStyle(SecondaryButtonStyle(
                 color: viewModel.isRecording ? .red : .blue,
                 isDisabled: viewModel.isProcessing
             ))
@@ -189,15 +184,10 @@ struct ContentView: View {
 
             // Translate
             Button(action: viewModel.translateText) {
-                VStack(spacing: 4) { // Reduced spacing from 6 to 4
-                    Image(systemName: "globe")
-                        .font(.system(size: 24)) // Reduced from 28 to 24
-                    Text("Translate")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
+                Image(systemName: "globe")
+                      .font(.system(size: 26))
             }
-            .buttonStyle(ModernButtonStyle(
+            .buttonStyle(SecondaryButtonStyle(
                 color: .orange,
                 isDisabled: viewModel.isProcessing || viewModel.speechText.originalText.isEmpty
             ))
@@ -205,19 +195,25 @@ struct ContentView: View {
 
             // Improve
             Button(action: viewModel.improveText) {
-                VStack(spacing: 4) { // Reduced spacing from 6 to 4
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 24)) // Reduced from 28 to 24
-                    Text("Improve")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
+                Image(systemName: "wand.and.stars")
+                     .font(.system(size: 26))
             }
-            .buttonStyle(ModernButtonStyle(
+            .buttonStyle(SecondaryButtonStyle(
                 color: .purple,
                 isDisabled: viewModel.isProcessing || viewModel.speechText.originalText.isEmpty
             ))
             .disabled(viewModel.isProcessing || viewModel.speechText.originalText.isEmpty)
+
+            // Speak
+            Button(action: viewModel.speakProcessedText) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 26))
+            }
+            .buttonStyle(SecondaryButtonStyle(
+                color: .orange,
+                isDisabled: viewModel.isProcessing || viewModel.speechText.processedText.isEmpty
+            ))
+            .disabled(viewModel.isProcessing || viewModel.speechText.processedText.isEmpty)
         }
         .overlay(
             Group {

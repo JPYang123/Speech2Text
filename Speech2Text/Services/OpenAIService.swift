@@ -166,15 +166,15 @@ class OpenAIService {
         if targetLanguageCode == "zh" { // Assuming "zh" is your code for Chinese [cite: 96]
             finalTargetLanguageDescription = "Simplified Chinese"
         }
-
+        
         let messages = [
             ChatMessage(role: .system, content: "You are a helpful translation assistant."), // [cite: 82]
             ChatMessage(role: .user, content: "Translate the following text to \(finalTargetLanguageDescription):\n\n\(text)") // [cite: 82]
         ]
-
+        
         chatCompletion(messages: messages, temperature: temperature, completion: completion)
     }
-
+    
     func improveText(
         text: String,
         originalTextLanguageCode: String, // e.g., "zh" if the original text is Chinese
@@ -182,17 +182,77 @@ class OpenAIService {
         completion: @escaping (Result<String, AppError>) -> Void
     ) {
         var systemPrompt = "You are a writing improvement assistant. Please improve the following text by correcting grammar, enhancing clarity, and making it more coherent while maintaining the original meaning." // [cite: 84]
-
+        
         // If the original text is in Chinese, instruct the LLM to output in Simplified Chinese.
         if originalTextLanguageCode == "zh" {
             systemPrompt += " Ensure the improved text is in Simplified Chinese."
         }
-
+        
         let messages = [
             ChatMessage(role: .system, content: systemPrompt),
             ChatMessage(role: .user, content: text) // [cite: 84]
         ]
-
+        
         chatCompletion(messages: messages, temperature: temperature, completion: completion)
+    }
+
+    /// Generate speech audio for the given text using OpenAI TTS.
+    /// - Returns: URL to a temporary audio file on success.
+    func generateSpeechAudio(
+        text: String,
+        completion: @escaping (Result<URL, AppError>) -> Void
+    ) {
+        guard !apiKey.isEmpty else {
+            completion(.failure(.missingAPIKey))
+            return
+        }
+
+        let url = baseURL.appendingPathComponent("audio/speech")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "model": ModelConfig.ttsModel,
+            "input": text,
+            "voice": "echo",
+            "response_format": "aac"
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion(.failure(.processingError("Failed to encode request")))
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(.networkError(error.localizedDescription)))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(.networkError("Invalid response")))
+                return
+            }
+
+            guard httpResponse.statusCode == 200, let data = data else {
+                let msg = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Unknown error"
+                completion(.failure(.networkError("\(httpResponse.statusCode): \(msg)")))
+                return
+            }
+
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("openai_tts.aac")
+            do {
+                try data.write(to: tempURL)
+                completion(.success(tempURL))
+            } catch {
+                completion(.failure(.processingError("Failed to save audio")))
+            }
+        }
+
+        task.resume()
     }
 }

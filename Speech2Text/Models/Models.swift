@@ -27,6 +27,23 @@ struct APIConfig {
 struct ModelConfig {
     static let transcriptionModel = "gpt-4o-mini-transcribe"
     static let llmModel = "gpt-4o-mini"
+    static let ttsModel = "gpt-4o-mini-tts"
+}
+
+/// Supported text to speech engines
+enum TTSOption: String, CaseIterable, Identifiable {
+    case openAI
+    case apple
+
+    var id: String { rawValue }
+
+    /// Display name for UI
+    var displayName: String {
+        switch self {
+        case .openAI: return "gpt-4o-mini-tts"
+        case .apple: return "Apple Built-in"
+        }
+    }
 }
 
 // Language model for translation

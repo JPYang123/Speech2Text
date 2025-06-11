@@ -15,38 +15,66 @@ class AudioService: NSObject, ObservableObject {
     
     override init() {
         super.init()
-        setupAudioSession()
+        setupInitialAudioSession()
     }
     
-    private func setupAudioSession() {
+    private func setupInitialAudioSession() {
         recordingSession = AVAudioSession.sharedInstance()
         
         do {
-            try recordingSession?.setCategory(.playAndRecord, mode: .default)
-            try recordingSession?.setActive(true)
+            // Set a more flexible category initially
+            try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try recordingSession?.setActive(false) // Don't activate until needed
         } catch {
             self.error = .recordingError("Failed to set up recording session: \(error.localizedDescription)")
         }
     }
     
     func startRecording() {
-        // Check permissions
-        recordingSession?.requestRecordPermission { [weak self] allowed in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                if allowed {
-                    self.initiateRecording()
-                } else {
-                    self.error = .recordingError("Microphone access denied")
+        // Check permissions using the new iOS 17+ API
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] allowed in
+                guard let self = self else { return }
+                
+                DispatchQueue.main.async {
+                    if allowed {
+                        self.configureAudioSessionForRecording()
+                        self.initiateRecording()
+                    } else {
+                        self.error = .recordingError("Microphone access denied")
+                    }
+                }
+            }
+        } else {
+            // Fallback for iOS versions before 17.0
+            recordingSession?.requestRecordPermission { [weak self] allowed in
+                guard let self = self else { return }
+                
+                DispatchQueue.main.async {
+                    if allowed {
+                        self.configureAudioSessionForRecording()
+                        self.initiateRecording()
+                    } else {
+                        self.error = .recordingError("Microphone access denied")
+                    }
                 }
             }
         }
     }
     
+    private func configureAudioSessionForRecording() {
+        do {
+            // Configure specifically for recording
+            try recordingSession?.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
+            try recordingSession?.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            self.error = .recordingError("Failed to configure audio session for recording: \(error.localizedDescription)")
+        }
+    }
+    
     private func initiateRecording() {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        audioFilePath = documentsDirectory.appendingPathComponent("recording.m4a")
+        audioFilePath = documentsDirectory.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
         
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -57,6 +85,7 @@ class AudioService: NSObject, ObservableObject {
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilePath!, settings: settings)
+            audioRecorder?.isMeteringEnabled = true // Enable for level monitoring
             audioRecorder?.record()
             isRecording = true
             
@@ -75,6 +104,28 @@ class AudioService: NSObject, ObservableObject {
         // Stop monitoring audio levels
         audioLevelMonitor.stopMonitoring()
         
+        // Reset audio session to allow other audio operations
+        resetAudioSession()
+        
         return audioFilePath
+    }
+    
+    private func resetAudioSession() {
+        do {
+            // Reset to a more flexible category after recording
+            try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            // Don't deactivate the session completely, just reset the category
+        } catch {
+            print("Failed to reset audio session: \(error.localizedDescription)")
+        }
+    }
+    
+    deinit {
+        // Clean up audio session when service is deallocated
+        do {
+            try recordingSession?.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Failed to deactivate audio session: \(error.localizedDescription)")
+        }
     }
 }
