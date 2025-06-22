@@ -66,6 +66,7 @@ enum AppError: Error {
     case processingError(String)
     case networkError(String)
     case missingAPIKey
+    case fileIOError(String)
     
     var description: String {
         switch self {
@@ -74,6 +75,7 @@ enum AppError: Error {
         case .processingError(let message): return "Processing error: \(message)"
         case .networkError(let message): return "Network error: \(message)"
         case .missingAPIKey: return "OpenAI API key is missing. Please set it in your app."
+        case .fileIOError(let message): return "File error: \(message)"
         }
     }
 }

@@ -66,6 +66,11 @@ class SpeechViewModel: ObservableObject {
         audioService.$error
             .compactMap { $0?.description }
             .assign(to: &$errorMessage)
+        
+        // Handle errors from correction manager
+        correctionManager.$error
+            .compactMap { $0?.description }
+            .assign(to: &$errorMessage)
     }
     
     func toggleRecording() {

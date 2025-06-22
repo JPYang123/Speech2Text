@@ -36,6 +36,11 @@ struct ManageCorrectionsView: View {
                         }
                     }
                 }
+                
+                if let message = manager.error?.description {
+                    Text(message)
+                        .foregroundColor(.red)
+                }
             }
             .navigationBarTitle("Manage Corrections", displayMode: .inline)
         }
