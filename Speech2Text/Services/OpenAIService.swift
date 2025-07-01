@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 
 // Service for handling OpenAI API communications
 class OpenAIService {
@@ -88,7 +89,90 @@ class OpenAIService {
             completion(.failure(.recordingError("Failed to read audio file: \(error.localizedDescription)")))
         }
     }
-    
+
+    /// Transcribe audio and detect the spoken language using OpenAI Whisper.
+    /// Returns both the transcribed text and the detected language code.
+    func transcribeAudioWithDetection(
+        fileURL: URL,
+        completion: @escaping (Result<(text: String, language: String), AppError>) -> Void
+    ) {
+        guard !apiKey.isEmpty else {
+            completion(.failure(.missingAPIKey))
+            return
+        }
+
+        do {
+            let audioData = try Data(contentsOf: fileURL)
+            let boundary = UUID().uuidString
+
+            var request = URLRequest(url: baseURL.appendingPathComponent("audio/transcriptions"))
+            request.httpMethod = "POST"
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+            var body = Data()
+
+            body.append("--\(boundary)\r\n")
+            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"recording.m4a\"\r\n")
+            body.append("Content-Type: audio/m4a\r\n\r\n")
+            body.append(audioData)
+            body.append("\r\n")
+
+            body.append("--\(boundary)\r\n")
+            body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
+            body.append(ModelConfig.transcriptionModel)
+            body.append("\r\n")
+
+            body.append("--\(boundary)\r\n")
+            body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
+            body.append("json")
+            body.append("\r\n")
+
+            body.append("--\(boundary)--\r\n")
+
+            request.httpBody = body
+
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(.networkError(error.localizedDescription)))
+                    return
+                }
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    completion(.failure(.networkError("Invalid response")))
+                    return
+                }
+
+                guard httpResponse.statusCode == 200, let data = data else {
+                    let errorMessage = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Unknown error"
+                    completion(.failure(.transcriptionError("\(httpResponse.statusCode): \(errorMessage)")))
+                    return
+                }
+
+                struct TextResponse: Decodable {
+                    let text: String
+                }
+
+                do {
+                    let decoder = JSONDecoder()
+                    let result = try decoder.decode(TextResponse.self, from: data)
+
+                    let recognizer = NLLanguageRecognizer()
+                    recognizer.processString(result.text)
+                    let detectedLanguage = recognizer.dominantLanguage?.rawValue ?? ""
+
+                    completion(.success((result.text, detectedLanguage)))
+                } catch {
+                    completion(.failure(.transcriptionError("Could not decode response")))
+                }
+            }
+
+            task.resume()
+        } catch {
+            completion(.failure(.recordingError("Failed to read audio file: \(error.localizedDescription)")))
+        }
+    }
+
     func chatCompletion(
         messages: [ChatMessage],
         temperature: Double = 0.7,

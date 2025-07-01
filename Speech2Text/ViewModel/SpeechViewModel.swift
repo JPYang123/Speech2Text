@@ -21,6 +21,7 @@ class SpeechViewModel: ObservableObject {
          }
      }
     @Published var customCorrections: [String: String] = [:]
+    @Published var isInterpreting = false
     
     let supportedLanguages = [
         Language(name: "English", code: "en"),
@@ -80,9 +81,23 @@ class SpeechViewModel: ObservableObject {
             startRecording()
         }
     }
+
+    func toggleInterpreter() {
+        if isRecording {
+            stopInterpreter()
+        } else {
+            startInterpreter()
+        }
+    }
     
     private func startRecording() {
         errorMessage = nil
+        audioService.startRecording()
+    }
+ 
+    private func startInterpreter() {
+        errorMessage = nil
+        isInterpreting = true
         audioService.startRecording()
     }
     
@@ -108,6 +123,51 @@ class SpeechViewModel: ObservableObject {
                     let correctedText = self.correctCommonMistranscriptions(text: transcribedText)
                     self.speechText.originalText = correctedText
                 case .failure(let error):
+                    self.errorMessage = error.description
+                }
+            }
+        }
+    }
+ 
+    private func stopInterpreter() {
+        isProcessing = true
+
+        guard let audioFileURL = audioService.stopRecording() else {
+            errorMessage = "Failed to get recording file"
+            isProcessing = false
+            isInterpreting = false
+            return
+        }
+
+        openAIService.transcribeAudioWithDetection(fileURL: audioFileURL) { [weak self] result in
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let output):
+                let transcribedText = self.correctCommonMistranscriptions(text: output.text)
+                self.speechText.originalText = transcribedText
+                self.openAIService.translateText(
+                    text: transcribedText,
+                    targetLanguageName: self.selectedLanguage.name,
+                    targetLanguageCode: self.selectedLanguage.code,
+                    temperature: self.temperature
+                ) { [weak self] translateResult in
+                    DispatchQueue.main.async {
+                        self?.isProcessing = false
+                        self?.isInterpreting = false
+                        switch translateResult {
+                        case .success(let translatedText):
+                            self?.speechText.processedText = translatedText
+                            self?.speakProcessedText()
+                        case .failure(let error):
+                            self?.errorMessage = error.description
+                        }
+                    }
+                }
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.isProcessing = false
+                    self.isInterpreting = false
                     self.errorMessage = error.description
                 }
             }

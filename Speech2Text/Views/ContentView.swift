@@ -204,6 +204,17 @@ struct ContentView: View {
             ))
             .disabled(viewModel.isProcessing || viewModel.speechText.originalText.isEmpty)
 
+            // Interpreter
+            Button(action: viewModel.toggleInterpreter) {
+                Image(systemName: viewModel.isRecording && viewModel.isInterpreting ? "stop.circle.fill" : "ear.badge.waveform")
+                    .font(.system(size: 26))
+            }
+            .buttonStyle(SecondaryButtonStyle(
+                color: .teal,
+                isDisabled: viewModel.isProcessing
+            ))
+            .disabled(viewModel.isProcessing)
+
             // Speak
             Button(action: viewModel.speakProcessedText) {
                 Image(systemName: "speaker.wave.2.fill")

@@ -7,6 +7,7 @@ Speech2Text is an iOS voice assistant built with SwiftUI. It records spoken audi
 - **Audio Recording** – Uses `AVFoundation` to capture audio and visualize the microphone level during recording. See `AudioService.swift` lines 4‑78 for implementation details.
 - **OpenAI Integration** – Transcribes speech and performs chat completions using your OpenAI API key. The service is defined in `OpenAIService.swift` lines 1‑198.
 - **Text Translation & Improvement** – Translate the transcription into different languages or improve the wording using GPT models (`SpeechViewModel.swift` lines 92‑151).
+- **Interpreter Mode** – A one‑tap interpreter that records speech, detects the spoken language, translates it to a selected language and immediately speaks the result.
 - **Custom Corrections** – Maintain a list of user‑defined correction pairs stored in JSON. Managed in `CorrectionManager.swift`.
 - **Clipboard Copy** – The Copy button places the processed text on the clipboard for easy sharing.
 - **Text to Speech** – Listen to results with the built-in **Speak** option using either Apple's system voices or OpenAI's TTS API.
