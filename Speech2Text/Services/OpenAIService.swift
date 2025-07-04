@@ -265,7 +265,7 @@ class OpenAIService {
         temperature: Double = 1.0, // [cite: 83]
         completion: @escaping (Result<String, AppError>) -> Void
     ) {
-        var systemPrompt = "You are a writing improvement assistant. Please improve the following text by correcting grammar, enhancing clarity, and making it more coherent while maintaining the original meaning." // [cite: 84]
+        var systemPrompt = "You are an assistant designed to enhance writing. Please revise the following text by correcting grammar, improving clarity, and ensuring coherence, while preserving the original meaning." // [cite: 84]
         
         // If the original text is in Chinese, instruct the LLM to output in Simplified Chinese.
         if originalTextLanguageCode == "zh" {

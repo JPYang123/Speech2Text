@@ -46,9 +46,10 @@ Upon first launch the app presents an animated walkthrough of these steps (you c
 1. Tap **Record** to start capturing audio. A waveform and timer display the current recording.
 2. Tap **Stop** to transcribe. The transcription appears in the *Original Text* field.
 3. Use **Translate** or **Improve** to process the text. Results appear in the *Processed Text* field.
-4. Tap **Speak** to hear the processed text using the selected TTS engine.
-5. Tap **Copy** to place the processed text on the clipboard.
-6. Use **Settings** to manage custom corrections, choose the TTS engine, adjust the response temperature, or set your API key.
+4. Tap **Interpreter** to instantly translate your speech and hear it in the selected language.
+5. Tap **Speak** to hear the processed text using the selected TTS engine.
+6. Tap **Copy** to place the processed text on the clipboard.
+7. Use **Settings** to manage custom corrections, choose the TTS engine, adjust the response temperature, or set your API key.
 
 ## Notes
 

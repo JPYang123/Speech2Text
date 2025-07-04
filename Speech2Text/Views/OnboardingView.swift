@@ -28,10 +28,20 @@ struct OnboardingView: View {
             icon: "mic.circle.fill"
         ),
         OnboardingStep(
-            title: "Translate or Improve",
-            message: "After transcribing, use the Translate or Improve buttons to process the text.",
+            title: "Translate",
+            message: "After transcribing, use the Translate button to translate the text to another language.",
+            icon: "globe"
+        ),
+        OnboardingStep(
+            title: "Improve",
+            message: "After transcribing, use the Improve button to process the text.",
             icon: "wand.and.stars"
         ),
+        OnboardingStep(
+             title: "Interpreter",
+             message: "The Interpreter button instantly translates your speech and speaks the result.",
+             icon: "ear.badge.waveform"
+         ),
         OnboardingStep(
             title: "Speak Text",
             message: "Tap the Speak button to listen to the processed text with text to speech.",
