@@ -46,6 +46,18 @@ enum TTSOption: String, CaseIterable, Identifiable {
     }
 }
 
+/// Available voices for OpenAI TTS
+enum OpenAIVoice: String, CaseIterable, Identifiable {
+    case alloy, echo, fable, onyx, nova, shimmer
+
+    var id: String { rawValue }
+
+    /// Display name for UI
+    var displayName: String {
+        rawValue.capitalized
+    }
+}
+
 // Language model for translation
 struct Language: Identifiable, Hashable {
     let id = UUID()

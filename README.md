@@ -6,11 +6,11 @@ Speech2Text is an iOS voice assistant built with SwiftUI. It records spoken audi
 
 - **Audio Recording** – Uses `AVFoundation` to capture audio and visualize the microphone level during recording. See `AudioService.swift` lines 4‑78 for implementation details.
 - **OpenAI Integration** – Transcribes speech and performs chat completions using your OpenAI API key. The service is defined in `OpenAIService.swift` lines 1‑198.
-- **Text Translation & Improvement** – Translate the transcription into different languages or improve the wording using GPT models (`SpeechViewModel.swift` lines 92‑151).
+- **Text Translation & Improvement** – Translate the transcription into different languages or improve the wording using GPT models (`SpeechViewModel.swift` lines 92‑151). Supported languages include English, Spanish, French, German, Chinese, Japanese, Korean, Russian, Arabic, Hindi, Vietnamese, Italian, Thai, Portuguese and Dutch.
 - **Interpreter Mode** – A one‑tap interpreter that records speech, detects the spoken language, translates it to a selected language and immediately speaks the result.
 - **Custom Corrections** – Maintain a list of user‑defined correction pairs stored in JSON. Managed in `CorrectionManager.swift`.
 - **Clipboard Copy** – The Copy button places the processed text on the clipboard for easy sharing.
-- **Text to Speech** – Listen to results with the built-in **Speak** option using either Apple's system voices or OpenAI's TTS API.
+- **Text to Speech** – Listen to results with the built-in **Speak** option using either Apple's system voices or OpenAI's TTS API. When using gpt‑4o‑mini‑tts you can choose from several voices.
 - **Temperature Control** – Adjust the OpenAI response creativity from the Settings screen.
 - **UI** – A SwiftUI interface with text boxes, waveform visualization and buttons for recording, translating, improving, speaking and managing corrections (`ContentView.swift`).
 - **Onboarding** – A short animated guide explains the main actions. It shows automatically on first launch and can be replayed from **Settings > Quick Guide** (`OnboardingView.swift`).

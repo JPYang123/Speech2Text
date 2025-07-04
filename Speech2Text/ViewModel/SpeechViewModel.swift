@@ -20,6 +20,11 @@ class SpeechViewModel: ObservableObject {
              UserDefaults.standard.set(ttsOption.rawValue, forKey: "ttsOption")
          }
      }
+    @Published var selectedVoice: OpenAIVoice {
+        didSet {
+            UserDefaults.standard.set(selectedVoice.rawValue, forKey: "openAIVoice")
+        }
+    }
     @Published var customCorrections: [String: String] = [:]
     @Published var isInterpreting = false
     
@@ -33,7 +38,12 @@ class SpeechViewModel: ObservableObject {
         Language(name: "Korean", code: "ko"),
         Language(name: "Russian", code: "ru"),
         Language(name: "Arabic", code: "ar"),
-        Language(name: "Hindi", code: "hi")
+        Language(name: "Hindi", code: "hi"),
+        Language(name: "Vietnamese", code: "vi"),
+        Language(name: "Italian", code: "it"),
+        Language(name: "Thai", code: "th"),
+        Language(name: "Portuguese", code: "pt"),
+        Language(name: "Dutch", code: "nl")
     ]
     
     // Make audioService accessible to the view for waveform visualization
@@ -53,6 +63,12 @@ class SpeechViewModel: ObservableObject {
             ttsOption = option
         } else {
             ttsOption = .apple
+        }
+        if let savedVoice = UserDefaults.standard.string(forKey: "openAIVoice"),
+           let voice = OpenAIVoice(rawValue: savedVoice) {
+            selectedVoice = voice
+        } else {
+            selectedVoice = .echo
         }
         
         // Load user-defined corrections
@@ -294,7 +310,7 @@ class SpeechViewModel: ObservableObject {
             configureAudioSessionForPlayback()
             
             isProcessing = true
-            openAIService.generateSpeechAudio(text: speechText.processedText) { [weak self] result in
+            openAIService.generateSpeechAudio(text: speechText.processedText, voice: selectedVoice.rawValue) { [weak self] result in
                 DispatchQueue.main.async {
                     self?.isProcessing = false
                     switch result {

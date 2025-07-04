@@ -284,6 +284,7 @@ class OpenAIService {
     /// - Returns: URL to a temporary audio file on success.
     func generateSpeechAudio(
         text: String,
+        voice: String,
         completion: @escaping (Result<URL, AppError>) -> Void
     ) {
         guard !apiKey.isEmpty else {
@@ -300,7 +301,7 @@ class OpenAIService {
         let body: [String: Any] = [
             "model": ModelConfig.ttsModel,
             "input": text,
-            "voice": "echo",
+            "voice": voice,
             "response_format": "aac"
         ]
 

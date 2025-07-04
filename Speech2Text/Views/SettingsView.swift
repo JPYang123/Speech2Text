@@ -33,6 +33,14 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
+                    if viewModel.ttsOption == .openAI {
+                        Picker("Voice", selection: $viewModel.selectedVoice) {
+                            ForEach(OpenAIVoice.allCases) { voice in
+                                Text(voice.displayName).tag(voice)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
                 }
             }
             .navigationTitle("Settings")
