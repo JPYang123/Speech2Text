@@ -22,19 +22,27 @@ struct ContentView: View {
                 )
                 .padding(.top)
 
-            // Language picker
-            HStack(spacing: 12) {
-                Picker("Language", selection: $viewModel.selectedLanguage) {
-                    ForEach(viewModel.supportedLanguages, id: \.self) { lang in
-                        Text(lang.name).tag(lang)
+            VStack(spacing: 10) {
+                 // Language picker for standard translation features
+                 HStack(spacing: 0) {
+                     Spacer(minLength: 0)
+
+                     Picker("Language", selection: $viewModel.selectedLanguage) {
+                         ForEach(viewModel.supportedLanguages, id: \.self) { lang in
+                             Text(lang.name).tag(lang)
+                         }
                     }
+                     .pickerStyle(MenuPickerStyle())
+                     .padding(.horizontal, 12)
+                     .padding(.vertical, 8)
+                     .background(Color(.systemGray6))
+                     .cornerRadius(10)
+                     .frame(maxWidth: 360)
+
+                     Spacer(minLength: 0)
                 }
-                .pickerStyle(MenuPickerStyle())
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .frame(maxWidth: .infinity)
+
+                interpreterLanguageSelectors
             }
             .padding(.horizontal)
 
@@ -216,7 +224,7 @@ struct ContentView: View {
             .disabled(viewModel.isProcessing)
 
             // Speak
-            Button(action: viewModel.speakProcessedText) {
+            Button(action: { viewModel.speakProcessedText() }) {
                 Image(systemName: "speaker.wave.2.fill")
                     .font(.system(size: 26))
             }
@@ -295,6 +303,56 @@ struct ContentView: View {
                 isDisabled: viewModel.isProcessing
             ))
             .disabled(viewModel.isProcessing)
+        }
+        .frame(maxWidth: .infinity)
+    }
+  
+    private var interpreterLanguageSelectors: some View {
+        VStack(spacing: 6) {
+            Text("Interpreter languages")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.primary.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+
+                Picker("Interpreter Language A", selection: $viewModel.interpreterLanguageA) {
+                    ForEach(viewModel.supportedLanguages, id: \.self) { lang in
+                        Text(lang.name).tag(lang)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .frame(maxWidth: 180)
+
+                Button(action: viewModel.swapInterpreterLanguages) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.system(size: 18, weight: .semibold))
+                        .padding(8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                }
+                .accessibilityLabel("Swap interpreter languages")
+
+                Picker("Interpreter Language B", selection: $viewModel.interpreterLanguageB) {
+                    ForEach(viewModel.supportedLanguages, id: \.self) { lang in
+                        Text(lang.name).tag(lang)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .frame(maxWidth: 180)
+
+                Spacer(minLength: 0)
+            }
         }
         .frame(maxWidth: .infinity)
     }

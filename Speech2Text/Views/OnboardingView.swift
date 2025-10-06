@@ -39,7 +39,7 @@ struct OnboardingView: View {
         ),
         OnboardingStep(
              title: "Interpreter",
-             message: "The Interpreter button instantly translates your speech and speaks the result.",
+             message: "Choose two interpreter languages and the Interpreter button will auto-detect who is speaking and reply in the other language.",
              icon: "ear.badge.waveform"
          ),
         OnboardingStep(

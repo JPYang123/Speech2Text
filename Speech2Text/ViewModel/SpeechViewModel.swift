@@ -8,7 +8,13 @@ class SpeechViewModel: ObservableObject {
     @Published var isProcessing = false
     @Published var isRecording = false
     @Published var errorMessage: String?
-    @Published var selectedLanguage: Language
+    @Published var selectedLanguage: Language {
+        didSet {
+            lastSpokenLanguageCode = selectedLanguage.code
+        }
+    }
+    @Published var interpreterLanguageA: Language
+    @Published var interpreterLanguageB: Language
     @Published var showCopySuccess = false
     @Published var temperature: Double {
         didSet {
@@ -27,6 +33,7 @@ class SpeechViewModel: ObservableObject {
     }
     @Published var customCorrections: [String: String] = [:]
     @Published var isInterpreting = false
+    private var lastSpokenLanguageCode: String?
     
     let supportedLanguages = [
         Language(name: "English", code: "en"),
@@ -56,7 +63,13 @@ class SpeechViewModel: ObservableObject {
     
     init() {
         // Default language is English
-        selectedLanguage = supportedLanguages[0]
+        let defaultLanguage = supportedLanguages[0]
+        let pairedLanguage = supportedLanguages.count > 1 ? supportedLanguages[1] : supportedLanguages[0]
+
+        selectedLanguage = defaultLanguage
+        interpreterLanguageA = defaultLanguage
+        interpreterLanguageB = pairedLanguage
+        lastSpokenLanguageCode = defaultLanguage.code
         temperature = UserDefaults.standard.object(forKey: "temperature") as? Double ?? 0.7
         if let savedOption = UserDefaults.standard.string(forKey: "ttsOption"),
            let option = TTSOption(rawValue: savedOption) {
@@ -160,23 +173,31 @@ class SpeechViewModel: ObservableObject {
 
             switch result {
             case .success(let output):
+                let detectedLanguage = self.normalizedLanguageCode(output.language)
+                let targetLanguage = self.interpreterTargetLanguage(for: detectedLanguage)
                 let transcribedText = self.correctCommonMistranscriptions(text: output.text)
-                self.speechText.originalText = transcribedText
+
+                DispatchQueue.main.async {
+                    self.speechText.originalText = transcribedText
+                }
+
                 self.openAIService.translateText(
                     text: transcribedText,
-                    targetLanguageName: self.selectedLanguage.name,
-                    targetLanguageCode: self.selectedLanguage.code,
+                    targetLanguageName: targetLanguage.name,
+                    targetLanguageCode: targetLanguage.code,
                     temperature: self.temperature
                 ) { [weak self] translateResult in
                     DispatchQueue.main.async {
-                        self?.isProcessing = false
-                        self?.isInterpreting = false
+                        guard let self = self else { return }
+                         self.isProcessing = false
+                         self.isInterpreting = false
                         switch translateResult {
                         case .success(let translatedText):
-                            self?.speechText.processedText = translatedText
-                            self?.speakProcessedText()
+                            self.speechText.processedText = translatedText
+                             self.lastSpokenLanguageCode = targetLanguage.code
+                             self.speakProcessedText(languageCode: targetLanguage.code)
                         case .failure(let error):
-                            self?.errorMessage = error.description
+                            self.errorMessage = error.description
                         }
                     }
                 }
@@ -212,6 +233,7 @@ class SpeechViewModel: ObservableObject {
                 switch result {
                 case .success(let translatedText):
                     self.speechText.processedText = translatedText
+                    self.lastSpokenLanguageCode = self.selectedLanguage.code
                 case .failure(let error):
                     self.errorMessage = error.description
                 }
@@ -240,6 +262,7 @@ class SpeechViewModel: ObservableObject {
                 switch result {
                 case .success(let improvedText):
                     self.speechText.processedText = improvedText
+                    self.lastSpokenLanguageCode = self.selectedLanguage.code
                 case .failure(let error):
                     self.errorMessage = error.description
                 }
@@ -251,6 +274,7 @@ class SpeechViewModel: ObservableObject {
     func clearText() {
         speechText.originalText = ""
         speechText.processedText = ""
+        lastSpokenLanguageCode = nil
     }
     
     // Function to replace the original text with the processed text
@@ -258,6 +282,7 @@ class SpeechViewModel: ObservableObject {
         let tempText = speechText.originalText
         speechText.originalText = speechText.processedText
         speechText.processedText = tempText
+        lastSpokenLanguageCode = nil
     }
     
     // Function to copy the processed text to clipboard
@@ -283,11 +308,14 @@ class SpeechViewModel: ObservableObject {
     }
 
     // Function to speak the processed text using the selected TTS option
-    func speakProcessedText() {
+    func speakProcessedText(languageCode: String? = nil) {
         guard !speechText.processedText.isEmpty else {
             errorMessage = "No text to speak"
             return
         }
+
+        let outputLanguageCode = languageCode ?? lastSpokenLanguageCode ?? selectedLanguage.code
+        lastSpokenLanguageCode = outputLanguageCode
 
         switch ttsOption {
         case .apple:
@@ -299,7 +327,7 @@ class SpeechViewModel: ObservableObject {
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
             
             // Set voice for the selected language if available
-            if let voice = AVSpeechSynthesisVoice(language: selectedLanguage.code) {
+            if let voice = voiceForLanguage(code: outputLanguageCode) {
                 utterance.voice = voice
             }
             
@@ -310,7 +338,10 @@ class SpeechViewModel: ObservableObject {
             configureAudioSessionForPlayback()
             
             isProcessing = true
-            openAIService.generateSpeechAudio(text: speechText.processedText, voice: selectedVoice.rawValue) { [weak self] result in
+            openAIService.generateSpeechAudio(
+                text: speechText.processedText,
+                voice: selectedVoice.rawValue
+            ) { [weak self] result in
                 DispatchQueue.main.async {
                     self?.isProcessing = false
                     switch result {
@@ -361,11 +392,59 @@ class SpeechViewModel: ObservableObject {
         correctionManager.removeCorrection(for: incorrect)
     }
 
+    func swapInterpreterLanguages() {
+        let temp = interpreterLanguageA
+        interpreterLanguageA = interpreterLanguageB
+        interpreterLanguageB = temp
+    }
+
     private func correctCommonMistranscriptions(text: String) -> String {
         var correctedText = text
         for (incorrect, correct) in customCorrections {
             correctedText = correctedText.replacingOccurrences(of: incorrect, with: correct)
         }
         return correctedText
+    }
+    
+    private func normalizedLanguageCode(_ code: String) -> String {
+        let lowercased = code.lowercased().replacingOccurrences(of: "_", with: "-")
+        if let separatorIndex = lowercased.firstIndex(of: "-") {
+            return String(lowercased[..<separatorIndex])
+        }
+        return lowercased
+    }
+
+    private func interpreterTargetLanguage(for detectedCode: String) -> Language {
+        if language(self.interpreterLanguageA, matches: detectedCode) {
+            return interpreterLanguageB
+        }
+
+        if language(self.interpreterLanguageB, matches: detectedCode) {
+            return interpreterLanguageA
+        }
+
+        // Fallback: if detection matches the selected translation language, speak to the opposite interpreter language.
+        if language(self.selectedLanguage, matches: detectedCode) {
+            return interpreterLanguageA
+        }
+
+        // Default to interpreterLanguageB when detection is unknown.
+        return interpreterLanguageB
+    }
+
+    private func language(_ language: Language, matches detectedCode: String) -> Bool {
+        let normalizedLanguageCode = self.normalizedLanguageCode(language.code)
+        return normalizedLanguageCode == detectedCode || language.code.lowercased() == detectedCode
+    }
+
+    private func voiceForLanguage(code: String) -> AVSpeechSynthesisVoice? {
+        if let exactVoice = AVSpeechSynthesisVoice(language: code) {
+            return exactVoice
+        }
+
+        let normalized = normalizedLanguageCode(code)
+        return AVSpeechSynthesisVoice.speechVoices().first { voice in
+            normalizedLanguageCode(voice.language) == normalized
+        }
     }
 }
