@@ -24,6 +24,11 @@
 		548518B32D90B2720010B445 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548518B22D90B2720010B445 /* WaveformView.swift */; };
 		54BD96602DEDF6C600B25BBF /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BD965F2DEDF6C600B25BBF /* OnboardingView.swift */; };
 		54BD96622DEE025F00B25BBF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BD96612DEE025F00B25BBF /* SettingsView.swift */; };
+		54CBD1312ED769C900FFD63B /* TranscribeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1302ED769C900FFD63B /* TranscribeTab.swift */; };
+		54CBD1332ED76A2900FFD63B /* TranslateTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1322ED76A2900FFD63B /* TranslateTab.swift */; };
+		54CBD1352ED76A7C00FFD63B /* InterpreterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1342ED76A7C00FFD63B /* InterpreterTab.swift */; };
+		54CBD1372ED76F1C00FFD63B /* SettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1362ED76F1C00FFD63B /* SettingsTab.swift */; };
+		54CBD1392ED7733700FFD63B /* ReusableComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1382ED7733700FFD63B /* ReusableComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +50,11 @@
 		548518B22D90B2720010B445 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		54BD965F2DEDF6C600B25BBF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		54BD96612DEE025F00B25BBF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		54CBD1302ED769C900FFD63B /* TranscribeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscribeTab.swift; sourceTree = "<group>"; };
+		54CBD1322ED76A2900FFD63B /* TranslateTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslateTab.swift; sourceTree = "<group>"; };
+		54CBD1342ED76A7C00FFD63B /* InterpreterTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterpreterTab.swift; sourceTree = "<group>"; };
+		54CBD1362ED76F1C00FFD63B /* SettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTab.swift; sourceTree = "<group>"; };
+		54CBD1382ED7733700FFD63B /* ReusableComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReusableComponents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +139,11 @@
 			isa = PBXGroup;
 			children = (
 				548518A72D908ACF0010B445 /* ContentView.swift */,
+				54CBD1382ED7733700FFD63B /* ReusableComponents.swift */,
+				54CBD1362ED76F1C00FFD63B /* SettingsTab.swift */,
+				54CBD1342ED76A7C00FFD63B /* InterpreterTab.swift */,
+				54CBD1322ED76A2900FFD63B /* TranslateTab.swift */,
+				54CBD1302ED769C900FFD63B /* TranscribeTab.swift */,
 				548518B22D90B2720010B445 /* WaveformView.swift */,
 				547521F32DE41CDD002311FE /* ManageCorrectionView.swift */,
 				5480DB5B2DED538F00C0C617 /* APIKeyView.swift */,
@@ -210,11 +225,16 @@
 			files = (
 				54BD96622DEE025F00B25BBF /* SettingsView.swift in Sources */,
 				5480DB5C2DED538F00C0C617 /* APIKeyView.swift in Sources */,
+				54CBD1312ED769C900FFD63B /* TranscribeTab.swift in Sources */,
 				5485189B2D9085E10010B445 /* Models.swift in Sources */,
+				54CBD1392ED7733700FFD63B /* ReusableComponents.swift in Sources */,
 				547521F42DE41CDD002311FE /* ManageCorrectionView.swift in Sources */,
 				548518A82D908ACF0010B445 /* ContentView.swift in Sources */,
 				548518B12D90B1CA0010B445 /* AudioLevelMonitor.swift in Sources */,
 				5485189E2D9088860010B445 /* OpenAIService.swift in Sources */,
+				54CBD1352ED76A7C00FFD63B /* InterpreterTab.swift in Sources */,
+				54CBD1332ED76A2900FFD63B /* TranslateTab.swift in Sources */,
+				54CBD1372ED76F1C00FFD63B /* SettingsTab.swift in Sources */,
 				5485188D2D9085900010B445 /* Speech2TextApp.swift in Sources */,
 				548518AF2D90B16D0010B445 /* WaveformConfig.swift in Sources */,
 				548518A02D90891E0010B445 /* SpeechViewModel.swift in Sources */,
