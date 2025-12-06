@@ -202,3 +202,9 @@ struct TranslateTab: View {
         }
     }
 }
+
+struct TranslateTab_Previews: PreviewProvider {
+    static var previews: some View {
+        TranslateTab(viewModel: SpeechViewModel())
+    }
+}

@@ -158,3 +158,9 @@ struct InterpreterTab: View {
         }
     }
 }
+
+struct InterpreterTab_Previews: PreviewProvider {
+    static var previews: some View {
+        InterpreterTab(viewModel: SpeechViewModel())
+    }
+}

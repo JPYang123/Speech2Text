@@ -82,3 +82,8 @@ struct SettingsTab: View {
     }
 }
 
+struct SettingsTab_Previews: PreviewProvider {
+    static var previews: some View {
+        SettingsTab(viewModel: SpeechViewModel())
+    }
+}

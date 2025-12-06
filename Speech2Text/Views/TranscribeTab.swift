@@ -146,3 +146,9 @@ struct TranscribeTab: View {
         }
     }
 }
+
+struct TranscribeTab_Previews: PreviewProvider {
+    static var previews: some View {
+        TranscribeTab(viewModel: SpeechViewModel())
+    }
+}
