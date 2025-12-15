@@ -1,41 +1,39 @@
 import Foundation
-import SwiftUI  // Added for withAnimation
-import UIKit    // Added for UIPasteboard
+import SwiftUI
+import UIKit
 import AVFoundation
+import Combine
 
-class SpeechViewModel: ObservableObject {
+@MainActor
+final class SpeechViewModel: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    // MARK: - Published UI State
+
     @Published var speechText = SpeechText()
-    @Published var isProcessing = false
-    @Published var isRecording = false
+
+    @Published private(set) var isProcessing = false
+    @Published private(set) var processingMessage: String = "Processing..."
+
+    @Published private(set) var isRecording = false
+    @Published private(set) var isInterpreting = false
+
     @Published var errorMessage: String?
+
     @Published var selectedLanguage: Language {
-        didSet {
-            lastSpokenLanguageCode = selectedLanguage.code
-        }
+        didSet { lastSpokenLanguageCode = selectedLanguage.code }
     }
     @Published var interpreterLanguageA: Language
     @Published var interpreterLanguageB: Language
-    @Published var showCopySuccess = false
-    @Published var temperature: Double {
-        didSet {
-            UserDefaults.standard.set(temperature, forKey: "temperature")
-        }
-    }
-    @Published var ttsOption: TTSOption {
-         didSet {
-             UserDefaults.standard.set(ttsOption.rawValue, forKey: "ttsOption")
-         }
-     }
-    @Published var selectedVoice: OpenAIVoice {
-        didSet {
-            UserDefaults.standard.set(selectedVoice.rawValue, forKey: "openAIVoice")
-        }
-    }
+
+    @Published var temperature: Double
+    @Published var ttsOption: TTSOption
+    @Published var selectedVoice: OpenAIVoice
+
     @Published var customCorrections: [String: String] = [:]
-    @Published var isInterpreting = false
-    private var lastSpokenLanguageCode: String?
-    
-    let supportedLanguages = [
+    @Published var showCopySuccess = false
+
+    // MARK: - Public read-only data
+
+    let supportedLanguages: [Language] = [
         Language(name: "English", code: "en"),
         Language(name: "Spanish", code: "es"),
         Language(name: "French", code: "fr"),
@@ -52,57 +50,117 @@ class SpeechViewModel: ObservableObject {
         Language(name: "Portuguese", code: "pt"),
         Language(name: "Dutch", code: "nl")
     ]
-    
-    // Make audioService accessible to the view for waveform visualization
-    let audioService = AudioService()
-    
-    private let openAIService = OpenAIService()
-    private let correctionManager = CorrectionManager.shared
+
+    // Expose for waveform visualization
+    let audioService: AudioService
+
+    // MARK: - Dependencies
+
+    private let openAIService: OpenAIServing
+    private let correctionManager: CorrectionManager
+
+    // MARK: - Internals
+
     private let speechSynthesizer = AVSpeechSynthesizer()
     private var audioPlayer: AVAudioPlayer?
-    
-    init() {
-        // Default language is English
+    private var lastGeneratedSpeechURL: URL?
+
+    private var lastSpokenLanguageCode: String?
+    private var currentTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
+
+    private enum DefaultsKeys {
+        static let temperature = "temperature"
+        static let ttsOption = "ttsOption"
+        static let openAIVoice = "openAIVoice"
+    }
+
+    // MARK: - Init
+
+    /// ⚠️ Important: Don't use `AudioService()` as a default argument when AudioService is `@MainActor`.
+    /// Default-arg expressions are evaluated in the caller's (often nonisolated) context.
+    init(
+        audioService: AudioService? = nil,
+        openAIService: OpenAIServing = OpenAIService(),
+        correctionManager: CorrectionManager = .shared
+    ) {
+        self.audioService = audioService ?? AudioService()
+        self.openAIService = openAIService
+        self.correctionManager = correctionManager
+
         let defaultLanguage = supportedLanguages[0]
         let pairedLanguage = supportedLanguages.count > 1 ? supportedLanguages[1] : supportedLanguages[0]
 
-        selectedLanguage = defaultLanguage
-        interpreterLanguageA = defaultLanguage
-        interpreterLanguageB = pairedLanguage
-        lastSpokenLanguageCode = defaultLanguage.code
-        temperature = UserDefaults.standard.object(forKey: "temperature") as? Double ?? 0.7
-        if let savedOption = UserDefaults.standard.string(forKey: "ttsOption"),
+        self.selectedLanguage = defaultLanguage
+        self.interpreterLanguageA = defaultLanguage
+        self.interpreterLanguageB = pairedLanguage
+        self.lastSpokenLanguageCode = defaultLanguage.code
+
+        let storedTemp = UserDefaults.standard.object(forKey: DefaultsKeys.temperature) as? Double
+        self.temperature = storedTemp ?? 0.7
+
+        if let savedOption = UserDefaults.standard.string(forKey: DefaultsKeys.ttsOption),
            let option = TTSOption(rawValue: savedOption) {
-            ttsOption = option
+            self.ttsOption = option
         } else {
-            ttsOption = .apple
+            self.ttsOption = .apple
         }
-        if let savedVoice = UserDefaults.standard.string(forKey: "openAIVoice"),
+
+        if let savedVoice = UserDefaults.standard.string(forKey: DefaultsKeys.openAIVoice),
            let voice = OpenAIVoice(rawValue: savedVoice) {
-            selectedVoice = voice
+            self.selectedVoice = voice
         } else {
-            selectedVoice = .echo
+            self.selectedVoice = .echo
         }
-        
-        // Load user-defined corrections
+
+        super.init()
+
+        bind()
+    }
+
+    private func bind() {
+        // Corrections
         customCorrections = correctionManager.corrections
-        correctionManager.$corrections.assign(to: &$customCorrections)
-        
-        // Bind to audio service recording state
+        correctionManager.$corrections
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$customCorrections)
+
+        // Recording state
         audioService.$isRecording
+            .receive(on: DispatchQueue.main)
             .assign(to: &$isRecording)
-        
-        // Handle errors from audio service
+
+        // Errors
         audioService.$error
             .compactMap { $0?.description }
+            .receive(on: DispatchQueue.main)
             .assign(to: &$errorMessage)
-        
-        // Handle errors from correction manager
+
         correctionManager.$error
             .compactMap { $0?.description }
+            .receive(on: DispatchQueue.main)
             .assign(to: &$errorMessage)
+
+        // Settings persistence (debounced)
+        $temperature
+            .removeDuplicates()
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { UserDefaults.standard.set($0, forKey: DefaultsKeys.temperature) }
+            .store(in: &cancellables)
+
+        $ttsOption
+            .removeDuplicates()
+            .sink { UserDefaults.standard.set($0.rawValue, forKey: DefaultsKeys.ttsOption) }
+            .store(in: &cancellables)
+
+        $selectedVoice
+            .removeDuplicates()
+            .sink { UserDefaults.standard.set($0.rawValue, forKey: DefaultsKeys.openAIVoice) }
+            .store(in: &cancellables)
     }
-    
+
+    // MARK: - Recording / Interpreter Controls
+
     func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -118,125 +176,118 @@ class SpeechViewModel: ObservableObject {
             startInterpreter()
         }
     }
-    
+
     private func startRecording() {
         errorMessage = nil
+        isInterpreting = false
         audioService.startRecording()
     }
- 
+
     private func startInterpreter() {
         errorMessage = nil
         isInterpreting = true
         audioService.startRecording()
     }
-    
-    private func stopRecording() {
-        isProcessing = true
 
-        guard let audioFileURL = audioService.stopRecording() else {
+    private func stopRecording() {
+        guard let audioURL = audioService.stopRecording() else {
             errorMessage = "Failed to get recording file"
-            isProcessing = false
             return
         }
 
-        // Transcribe the audio
-        openAIService.transcribeAudio(fileURL: audioFileURL) { [weak self] result in
-            guard let self = self else { return }
+        runProcessing(message: "Transcribing…") { [weak self] in
+            guard let self else { return }
+            do {
+                let transcribed = try await self.openAIService.transcribeAudio(fileURL: audioURL, language: "en")
+                try Task.checkCancellation()
 
-            DispatchQueue.main.async {
-                self.isProcessing = false
-
-                switch result {
-                case .success(let transcribedText):
-                    // Apply the correction here
-                    let correctedText = self.correctCommonMistranscriptions(text: transcribedText)
-                    self.speechText.originalText = correctedText
-                case .failure(let error):
-                    self.errorMessage = error.description
-                }
+                let corrected = self.correctCommonMistranscriptions(text: transcribed)
+                self.speechText.originalText = corrected
+            } catch is CancellationError {
+                // silent
+            } catch let err as AppError {
+                self.errorMessage = err.description
+            } catch {
+                self.errorMessage = AppError.processingError(error.localizedDescription).description
             }
+
+            self.deleteFileIfPossible(audioURL)
         }
     }
- 
-    private func stopInterpreter() {
-        isProcessing = true
 
-        guard let audioFileURL = audioService.stopRecording() else {
+    private func stopInterpreter() {
+        guard let audioURL = audioService.stopRecording() else {
             errorMessage = "Failed to get recording file"
-            isProcessing = false
             isInterpreting = false
             return
         }
 
-        openAIService.transcribeAudioWithDetection(fileURL: audioFileURL) { [weak self] result in
-            guard let self = self else { return }
+        runProcessing(message: "Transcribing…") { [weak self] in
+            guard let self else { return }
 
-            switch result {
-            case .success(let output):
-                let detectedLanguage = self.normalizedLanguageCode(output.language)
-                let targetLanguage = self.interpreterTargetLanguage(for: detectedLanguage)
+            do {
+                let output = try await self.openAIService.transcribeAudioWithDetection(fileURL: audioURL)
+                try Task.checkCancellation()
+
+                let detected = self.normalizedLanguageCode(output.language)
+                let targetLanguage = self.interpreterTargetLanguage(for: detected)
                 let transcribedText = self.correctCommonMistranscriptions(text: output.text)
 
-                DispatchQueue.main.async {
-                    self.speechText.originalText = transcribedText
-                }
+                self.speechText.originalText = transcribedText
 
-                self.openAIService.translateText(
+                self.processingMessage = "Translating…"
+                let translated = try await self.openAIService.translateText(
                     text: transcribedText,
                     targetLanguageName: targetLanguage.name,
                     targetLanguageCode: targetLanguage.code,
                     temperature: self.temperature
-                ) { [weak self] translateResult in
-                    DispatchQueue.main.async {
-                        guard let self = self else { return }
-                         self.isProcessing = false
-                         self.isInterpreting = false
-                        switch translateResult {
-                        case .success(let translatedText):
-                            self.speechText.processedText = translatedText
-                             self.lastSpokenLanguageCode = targetLanguage.code
-                             self.speakProcessedText(languageCode: targetLanguage.code)
-                        case .failure(let error):
-                            self.errorMessage = error.description
-                        }
-                    }
-                }
-            case .failure(let error):
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                    self.isInterpreting = false
-                    self.errorMessage = error.description
-                }
+                )
+                try Task.checkCancellation()
+
+                self.speechText.processedText = translated
+                self.lastSpokenLanguageCode = targetLanguage.code
+
+                try await self.speakProcessedTextInternal(languageCode: targetLanguage.code)
+            } catch is CancellationError {
+                // silent
+            } catch let err as AppError {
+                self.errorMessage = err.description
+            } catch {
+                self.errorMessage = AppError.processingError(error.localizedDescription).description
             }
+
+            self.isInterpreting = false
+            self.deleteFileIfPossible(audioURL)
         }
     }
-    
+
+    // MARK: - Text Actions
+
     func translateText() {
         guard !speechText.originalText.isEmpty else {
             errorMessage = "No text to translate"
             return
         }
 
-        isProcessing = true
-        errorMessage = nil
+        runProcessing(message: "Translating…") { [weak self] in
+            guard let self else { return }
+            do {
+                let translated = try await self.openAIService.translateText(
+                    text: self.speechText.originalText,
+                    targetLanguageName: self.selectedLanguage.name,
+                    targetLanguageCode: self.selectedLanguage.code,
+                    temperature: self.temperature
+                )
+                try Task.checkCancellation()
 
-        openAIService.translateText(
-            text: speechText.originalText,
-            targetLanguageName: selectedLanguage.name,
-            targetLanguageCode: selectedLanguage.code,
-            temperature: temperature
-        ) { [weak self] result in
-            guard let self = self else { return }
-
-            DispatchQueue.main.async {
-                self.isProcessing = false
-                switch result {
-                case .success(let translatedText):
-                    self.speechText.processedText = translatedText
-                    self.lastSpokenLanguageCode = self.selectedLanguage.code
-                case .failure(let error):
-                    self.errorMessage = error.description
-                }
+                self.speechText.processedText = translated
+                self.lastSpokenLanguageCode = self.selectedLanguage.code
+            } catch is CancellationError {
+                // silent
+            } catch let err as AppError {
+                self.errorMessage = err.description
+            } catch {
+                self.errorMessage = AppError.processingError(error.localizedDescription).description
             }
         }
     }
@@ -247,68 +298,63 @@ class SpeechViewModel: ObservableObject {
             return
         }
 
-        isProcessing = true
-        errorMessage = nil
+        runProcessing(message: "Improving…") { [weak self] in
+            guard let self else { return }
+            do {
+                let improved = try await self.openAIService.improveText(
+                    text: self.speechText.originalText,
+                    originalTextLanguageCode: self.selectedLanguage.code,
+                    temperature: self.temperature
+                )
+                try Task.checkCancellation()
 
-        openAIService.improveText(
-            text: speechText.originalText,
-            originalTextLanguageCode: selectedLanguage.code,
-            temperature: temperature
-        ) { [weak self] result in
-            guard let self = self else { return }
-
-            DispatchQueue.main.async {
-                self.isProcessing = false
-                switch result {
-                case .success(let improvedText):
-                    self.speechText.processedText = improvedText
-                    self.lastSpokenLanguageCode = self.selectedLanguage.code
-                case .failure(let error):
-                    self.errorMessage = error.description
-                }
+                self.speechText.processedText = improved
+                self.lastSpokenLanguageCode = self.selectedLanguage.code
+            } catch is CancellationError {
+                // silent
+            } catch let err as AppError {
+                self.errorMessage = err.description
+            } catch {
+                self.errorMessage = AppError.processingError(error.localizedDescription).description
             }
         }
     }
-    
-    // Function to clear both text boxes
+
     func clearText() {
         speechText.originalText = ""
         speechText.processedText = ""
         lastSpokenLanguageCode = nil
     }
-    
-    // Function to replace the original text with the processed text
+
     func replaceText() {
-        let tempText = speechText.originalText
+        let temp = speechText.originalText
         speechText.originalText = speechText.processedText
-        speechText.processedText = tempText
+        speechText.processedText = temp
         lastSpokenLanguageCode = nil
     }
-    
-    // Function to copy the processed text to clipboard
+
     func copyProcessedText() {
         guard !speechText.processedText.isEmpty else {
             errorMessage = "No text to copy"
             return
         }
-        
+
         UIPasteboard.general.string = speechText.processedText
-        
-        // Show success message
-        withAnimation {
-            showCopySuccess = true
-        }
-        
-        // Hide the message after 2 seconds
+
+        withAnimation { showCopySuccess = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            withAnimation {
-                self?.showCopySuccess = false
-            }
+            withAnimation { self?.showCopySuccess = false }
         }
     }
 
-    // Function to speak the processed text using the selected TTS option
     func speakProcessedText(languageCode: String? = nil) {
+        Task { [weak self] in
+            guard let self else { return }
+            try? await self.speakProcessedTextInternal(languageCode: languageCode)
+        }
+    }
+
+    private func speakProcessedTextInternal(languageCode: String? = nil) async throws {
         guard !speechText.processedText.isEmpty else {
             errorMessage = "No text to speak"
             return
@@ -317,73 +363,67 @@ class SpeechViewModel: ObservableObject {
         let outputLanguageCode = languageCode ?? lastSpokenLanguageCode ?? selectedLanguage.code
         lastSpokenLanguageCode = outputLanguageCode
 
+        audioPlayer?.stop()
+        if let url = lastGeneratedSpeechURL {
+            deleteFileIfPossible(url)
+            lastGeneratedSpeechURL = nil
+        }
+
         switch ttsOption {
         case .apple:
-            // Configure audio session for playback before speaking
-            configureAudioSessionForPlayback()
-            
+            do { try AudioSessionController.shared.configureForPlayback() } catch {}
+
             let utterance = AVSpeechUtterance(string: speechText.processedText)
             utterance.volume = 1.0
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-            
-            // Set voice for the selected language if available
             if let voice = voiceForLanguage(code: outputLanguageCode) {
                 utterance.voice = voice
             }
-            
             speechSynthesizer.speak(utterance)
-            
+
         case .openAI:
-            // Configure audio session for playback before playing OpenAI audio
-            configureAudioSessionForPlayback()
-            
+            processingMessage = "Generating speech…"
             isProcessing = true
-            openAIService.generateSpeechAudio(
-                text: speechText.processedText,
-                voice: selectedVoice.rawValue
-            ) { [weak self] result in
-                DispatchQueue.main.async {
-                    self?.isProcessing = false
-                    switch result {
-                    case .success(let url):
-                        do {
-                            self?.audioPlayer = try AVAudioPlayer(contentsOf: url)
-                            self?.audioPlayer?.volume = 1.0
-                            self?.audioPlayer?.play()
-                        } catch {
-                            self?.errorMessage = "Failed to play audio"
-                        }
-                    case .failure(let error):
-                        self?.errorMessage = error.description
-                    }
-                }
+
+            do { try AudioSessionController.shared.configureForPlayback() } catch {}
+
+            do {
+                let url = try await openAIService.generateSpeechAudio(
+                    text: speechText.processedText,
+                    voice: selectedVoice.rawValue
+                )
+                try Task.checkCancellation()
+
+                lastGeneratedSpeechURL = url
+                let player = try AVAudioPlayer(contentsOf: url)
+                player.volume = 1.0
+                player.delegate = self
+                player.play()
+                audioPlayer = player
+            } catch is CancellationError {
+                // silent
+            } catch let err as AppError {
+                errorMessage = err.description
+            } catch {
+                errorMessage = AppError.processingError("Failed to play audio: \(error.localizedDescription)").description
             }
-        }
-    }
-    
-    // MARK: - Audio Session Management
-    
-    private func configureAudioSessionForPlayback() {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            
-            // Set category to playback for maximum volume
-            try audioSession.setCategory(.playback, mode: .default, options: [])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            
-            // Override output to speaker if needed (for iPhone)
-            if audioSession.availableInputs?.first(where: { $0.portType == .builtInMic }) != nil {
-                try audioSession.overrideOutputAudioPort(.speaker)
-            }
-            
-        } catch {
-            print("Failed to configure audio session for playbook: \(error)")
-            // Don't set errorMessage here as TTS might still work with current session
+
+            isProcessing = false
         }
     }
 
-    // MARK: - User Corrections Management
-    
+    // MARK: - Cancel
+
+    func cancelProcessing() {
+        currentTask?.cancel()
+        currentTask = nil
+        isProcessing = false
+        processingMessage = "Processing..."
+        isInterpreting = false
+    }
+
+    // MARK: - Corrections
+
     func addCorrection(incorrect: String, correct: String) {
         correctionManager.addCorrection(incorrect: incorrect, correct: correct)
     }
@@ -399,52 +439,77 @@ class SpeechViewModel: ObservableObject {
     }
 
     private func correctCommonMistranscriptions(text: String) -> String {
-        var correctedText = text
+        var corrected = text
         for (incorrect, correct) in customCorrections {
-            correctedText = correctedText.replacingOccurrences(of: incorrect, with: correct)
+            corrected = corrected.replacingOccurrences(of: incorrect, with: correct)
         }
-        return correctedText
+        return corrected
     }
-    
+
+    // MARK: - Interpreter routing helpers
+
     private func normalizedLanguageCode(_ code: String) -> String {
         let lowercased = code.lowercased().replacingOccurrences(of: "_", with: "-")
-        if let separatorIndex = lowercased.firstIndex(of: "-") {
-            return String(lowercased[..<separatorIndex])
+        if let separator = lowercased.firstIndex(of: "-") {
+            return String(lowercased[..<separator])
         }
         return lowercased
     }
 
     private func interpreterTargetLanguage(for detectedCode: String) -> Language {
-        if language(self.interpreterLanguageA, matches: detectedCode) {
-            return interpreterLanguageB
-        }
+        if language(interpreterLanguageA, matches: detectedCode) { return interpreterLanguageB }
+        if language(interpreterLanguageB, matches: detectedCode) { return interpreterLanguageA }
 
-        if language(self.interpreterLanguageB, matches: detectedCode) {
-            return interpreterLanguageA
-        }
-
-        // Fallback: if detection matches the selected translation language, speak to the opposite interpreter language.
-        if language(self.selectedLanguage, matches: detectedCode) {
-            return interpreterLanguageA
-        }
-
-        // Default to interpreterLanguageB when detection is unknown.
+        if language(selectedLanguage, matches: detectedCode) { return interpreterLanguageA }
         return interpreterLanguageB
     }
 
     private func language(_ language: Language, matches detectedCode: String) -> Bool {
-        let normalizedLanguageCode = self.normalizedLanguageCode(language.code)
-        return normalizedLanguageCode == detectedCode || language.code.lowercased() == detectedCode
+        let normalized = normalizedLanguageCode(language.code)
+        return normalized == detectedCode || language.code.lowercased() == detectedCode
     }
 
     private func voiceForLanguage(code: String) -> AVSpeechSynthesisVoice? {
-        if let exactVoice = AVSpeechSynthesisVoice(language: code) {
-            return exactVoice
-        }
-
+        if let exact = AVSpeechSynthesisVoice(language: code) { return exact }
         let normalized = normalizedLanguageCode(code)
         return AVSpeechSynthesisVoice.speechVoices().first { voice in
             normalizedLanguageCode(voice.language) == normalized
+        }
+    }
+
+    // MARK: - Processing runner
+
+    private func runProcessing(message: String, operation: @escaping () async -> Void) {
+        currentTask?.cancel()
+
+        errorMessage = nil
+        isProcessing = true
+        processingMessage = message
+
+        currentTask = Task { [weak self] in
+            guard let self else { return }
+            await operation()
+            self.isProcessing = false
+            self.processingMessage = "Processing..."
+        }
+    }
+
+    // MARK: - File cleanup
+
+    private func deleteFileIfPossible(_ url: URL) {
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - AVAudioPlayerDelegate
+
+    /// Make it nonisolated because the delegate callback is not guaranteed to be on MainActor.
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if let url = self.lastGeneratedSpeechURL {
+                self.deleteFileIfPossible(url)
+                self.lastGeneratedSpeechURL = nil
+            }
         }
     }
 }

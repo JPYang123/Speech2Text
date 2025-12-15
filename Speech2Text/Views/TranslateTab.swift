@@ -8,15 +8,13 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Translate Tab
 struct TranslateTab: View {
     @ObservedObject var viewModel: SpeechViewModel
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Language Selector
                     VStack(spacing: 12) {
                         HStack {
                             Image(systemName: "globe")
@@ -25,7 +23,7 @@ struct TranslateTab: View {
                                 .font(.headline)
                             Spacer()
                         }
-                        
+
                         Picker("Language", selection: $viewModel.selectedLanguage) {
                             ForEach(viewModel.supportedLanguages, id: \.self) { lang in
                                 Text(lang.name).tag(lang)
@@ -42,12 +40,11 @@ struct TranslateTab: View {
                             .fill(Color(.systemBackground))
                             .shadow(color: .black.opacity(0.05), radius: 10)
                     )
-                    
-                    // Original Text
+
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Original Text")
                             .font(.headline)
-                        
+
                         TextEditor(text: $viewModel.speechText.originalText)
                             .frame(minHeight: 150)
                             .padding(12)
@@ -57,13 +54,10 @@ struct TranslateTab: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color(.systemGray4), lineWidth: 1)
                             )
-                            // NEW: Keyboard Dismissal Toolbar
                             .toolbar {
                                 ToolbarItemGroup(placement: .keyboard) {
                                     Spacer()
-                                    Button("Done") {
-                                        hideKeyboard()
-                                    }
+                                    Button("Done") { hideKeyboard() }
                                 }
                             }
                     }
@@ -73,8 +67,7 @@ struct TranslateTab: View {
                             .fill(Color(.systemBackground))
                             .shadow(color: .black.opacity(0.05), radius: 10)
                     )
-                    
-                    // Action Buttons
+
                     HStack(spacing: 16) {
                         Button(action: viewModel.translateText) {
                             HStack {
@@ -88,7 +81,7 @@ struct TranslateTab: View {
                             .cornerRadius(12)
                         }
                         .disabled(viewModel.isProcessing || viewModel.speechText.originalText.isEmpty)
-                        
+
                         Button(action: viewModel.improveText) {
                             HStack {
                                 Image(systemName: "wand.and.stars")
@@ -103,8 +96,7 @@ struct TranslateTab: View {
                         .disabled(viewModel.isProcessing || viewModel.speechText.originalText.isEmpty)
                     }
                     .padding(.horizontal)
-                    
-                    // Processed Text
+
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Result")
@@ -116,7 +108,7 @@ struct TranslateTab: View {
                                         Image(systemName: "speaker.wave.2.fill")
                                             .foregroundColor(.orange)
                                     }
-                                    
+
                                     Button(action: viewModel.copyProcessedText) {
                                         Image(systemName: "doc.on.doc")
                                             .foregroundColor(.green)
@@ -124,7 +116,7 @@ struct TranslateTab: View {
                                 }
                             }
                         }
-                        
+
                         TextEditor(text: $viewModel.speechText.processedText)
                             .frame(minHeight: 150)
                             .padding(12)
@@ -134,13 +126,10 @@ struct TranslateTab: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.green.opacity(0.5), lineWidth: viewModel.speechText.processedText.isEmpty ? 1 : 2)
                             )
-                            // NEW: Keyboard Dismissal Toolbar (Applied here as well for consistency)
                             .toolbar {
                                 ToolbarItemGroup(placement: .keyboard) {
                                     Spacer()
-                                    Button("Done") {
-                                        hideKeyboard()
-                                    }
+                                    Button("Done") { hideKeyboard() }
                                 }
                             }
                     }
@@ -150,8 +139,7 @@ struct TranslateTab: View {
                             .fill(Color(.systemBackground))
                             .shadow(color: .black.opacity(0.05), radius: 10)
                     )
-                    
-                    // Utility Buttons
+
                     HStack(spacing: 16) {
                         Button(action: viewModel.clearText) {
                             HStack {
@@ -164,7 +152,7 @@ struct TranslateTab: View {
                             .foregroundColor(.white)
                             .cornerRadius(12)
                         }
-                        
+
                         Button(action: viewModel.replaceText) {
                             HStack {
                                 Image(systemName: "arrow.left.arrow.right.circle.fill")
@@ -179,12 +167,11 @@ struct TranslateTab: View {
                         .disabled(viewModel.speechText.processedText.isEmpty)
                     }
                     .padding(.horizontal)
-                    
-                    // Error/Success Messages
+
                     if let errorMessage = viewModel.errorMessage {
                         ErrorBanner(message: errorMessage)
                     }
-                    
+
                     if viewModel.showCopySuccess {
                         SuccessBanner(message: "Copied to clipboard!")
                     }
@@ -192,13 +179,11 @@ struct TranslateTab: View {
                 .padding()
             }
             .navigationTitle("Translate & Improve")
-            .overlay(
-                Group {
-                    if viewModel.isProcessing {
-                        ProcessingOverlay()
-                    }
+            .overlay {
+                if viewModel.isProcessing {
+                    ProcessingOverlay(message: viewModel.processingMessage, onCancel: viewModel.cancelProcessing)
                 }
-            )
+            }
         }
     }
 }

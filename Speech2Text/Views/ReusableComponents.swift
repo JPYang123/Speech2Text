@@ -1,10 +1,3 @@
-//
-//  ReusableComponents.swift
-//  Speech2Text
-//
-//  Created by Jiping Yang on 11/26/25.
-//
-
 import SwiftUI
 import UIKit
 
@@ -13,17 +6,17 @@ import UIKit
 struct ConversationBubble: View {
     let text: String
     let isLeft: Bool
-    
+
     var body: some View {
         HStack {
             if !isLeft { Spacer(minLength: 60) }
-            
+
             Text(text)
                 .padding()
                 .background(isLeft ? Color(.systemGray5) : Color.blue)
                 .foregroundColor(isLeft ? .primary : .white)
                 .cornerRadius(16)
-            
+
             if isLeft { Spacer(minLength: 60) }
         }
     }
@@ -31,7 +24,7 @@ struct ConversationBubble: View {
 
 struct ErrorBanner: View {
     let message: String
-    
+
     var body: some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -51,7 +44,7 @@ struct ErrorBanner: View {
 
 struct SuccessBanner: View {
     let message: String
-    
+
     var body: some View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
@@ -70,18 +63,36 @@ struct SuccessBanner: View {
 }
 
 struct ProcessingOverlay: View {
+    let message: String
+    let onCancel: (() -> Void)?
+
+    init(message: String = "Processing...", onCancel: (() -> Void)? = nil) {
+        self.message = message
+        self.onCancel = onCancel
+    }
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 16) {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
-                Text("Processing...")
+
+                Text(message)
                     .foregroundColor(.white)
                     .font(.headline)
+
+                if let onCancel {
+                    Button("Cancel", action: onCancel)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.15))
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
             }
             .padding(32)
             .background(

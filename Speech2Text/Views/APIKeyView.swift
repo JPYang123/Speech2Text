@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Simple view for entering and storing the OpenAI API key.
 struct APIKeyView: View {
-    @State private var apiKey: String = UserDefaults.standard.string(forKey: "OpenAIAPIKey") ?? ""
+    @State private var apiKey: String = KeychainStore.loadString(forKey: APIConfig.openAIKeyIdentifier) ?? ""
+    @State private var errorText: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -11,13 +11,45 @@ struct APIKeyView: View {
                 Section(header: Text("OpenAI API Key")) {
                     Text("Create a key at platform.openai.com and paste it below.")
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+
                     SecureField("sk-...", text: $apiKey)
-                    Button("Save") {
-                        UserDefaults.standard.set(apiKey, forKey: "OpenAIAPIKey")
-                        dismiss()
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    HStack {
+                        Button("Save") {
+                            do {
+                                try APIConfig.saveOpenAIKey(apiKey)
+                                dismiss()
+                            } catch {
+                                errorText = "Failed to save key."
+                            }
+                        }
+                        .disabled(!looksLikeOpenAIKey(apiKey))
+
+                        Button("Clear") {
+                            APIConfig.clearOpenAIKey()
+                            apiKey = ""
+                        }
+                        .foregroundStyle(.red)
+                        .disabled(apiKey.isEmpty && !APIConfig.hasKey)
                     }
-                    .disabled(apiKey.isEmpty)
+
+                    if let errorText {
+                        Text(errorText)
+                            .foregroundStyle(.red)
+                    }
+
+                    if APIConfig.hasKey {
+                        Text("Status: ✅ Key is set")
+                            .foregroundStyle(.secondary)
+                            .font(.footnote)
+                    } else {
+                        Text("Status: ❌ Key not set")
+                            .foregroundStyle(.secondary)
+                            .font(.footnote)
+                    }
                 }
             }
             .navigationTitle("API Key")
@@ -29,10 +61,14 @@ struct APIKeyView: View {
             }
         }
     }
+
+    /// Heuristic only (OpenAI key formats may evolve).
+    private func looksLikeOpenAIKey(_ key: String) -> Bool {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.hasPrefix("sk-") && trimmed.count >= 20
+    }
 }
 
 struct APIKeyView_Previews: PreviewProvider {
-    static var previews: some View {
-        APIKeyView()
-    }
+    static var previews: some View { APIKeyView() }
 }

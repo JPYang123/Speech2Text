@@ -1,59 +1,37 @@
 import Foundation
 import AVFoundation
 
-// Service for handling audio recording
-class AudioService: NSObject, ObservableObject {
+@MainActor
+final class AudioService: NSObject, ObservableObject {
     private var audioRecorder: AVAudioRecorder?
-    private var recordingSession: AVAudioSession?
-    private var audioFilePath: URL?
-    
-    @Published var isRecording = false
+    private var audioFileURL: URL?
+
+    @Published private(set) var isRecording = false
     @Published var error: AppError?
-    
-    // Add audio level monitor for visualization
+
     let audioLevelMonitor = AudioLevelMonitor()
-    
-    override init() {
-        super.init()
-        setupInitialAudioSession()
-    }
-    
-    private func setupInitialAudioSession() {
-        recordingSession = AVAudioSession.sharedInstance()
-        
-        do {
-            // Set a more flexible category initially
-            try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-            try recordingSession?.setActive(false) // Don't activate until needed
-        } catch {
-            self.error = .recordingError("Failed to set up recording session: \(error.localizedDescription)")
-        }
-    }
-    
+
     func startRecording() {
-        // Check permissions using the new iOS 17+ API
+        error = nil
+        guard !isRecording else { return }
+
         if #available(iOS 17.0, *) {
             AVAudioApplication.requestRecordPermission { [weak self] allowed in
-                guard let self = self else { return }
-                
-                DispatchQueue.main.async {
+                Task { @MainActor in
+                    guard let self else { return }
                     if allowed {
-                        self.configureAudioSessionForRecording()
-                        self.initiateRecording()
+                        self.startRecordingAfterPermission()
                     } else {
                         self.error = .recordingError("Microphone access denied")
                     }
                 }
             }
         } else {
-            // Fallback for iOS versions before 17.0
-            recordingSession?.requestRecordPermission { [weak self] allowed in
-                guard let self = self else { return }
-                
-                DispatchQueue.main.async {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+                Task { @MainActor in
+                    guard let self else { return }
                     if allowed {
-                        self.configureAudioSessionForRecording()
-                        self.initiateRecording()
+                        self.startRecordingAfterPermission()
                     } else {
                         self.error = .recordingError("Microphone access denied")
                     }
@@ -61,71 +39,58 @@ class AudioService: NSObject, ObservableObject {
             }
         }
     }
-    
-    private func configureAudioSessionForRecording() {
+
+    private func startRecordingAfterPermission() {
         do {
-            // Configure specifically for recording
-            try recordingSession?.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
-            try recordingSession?.setActive(true, options: .notifyOthersOnDeactivation)
+            try AudioSessionController.shared.configureForRecording()
+            try initiateRecording()
+            isRecording = true
         } catch {
-            self.error = .recordingError("Failed to configure audio session for recording: \(error.localizedDescription)")
+            self.error = .recordingError("Failed to start recording: \(error.localizedDescription)")
         }
     }
-    
-    private func initiateRecording() {
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        audioFilePath = documentsDirectory.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
-        
-        let settings = [
+
+    private func initiateRecording() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("recording_\(Int(Date().timeIntervalSince1970)).m4a")
+        audioFileURL = url
+
+        let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 44100,
             AVNumberOfChannelsKey: 1,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
-        
-        do {
-            audioRecorder = try AVAudioRecorder(url: audioFilePath!, settings: settings)
-            audioRecorder?.isMeteringEnabled = true // Enable for level monitoring
-            audioRecorder?.record()
-            isRecording = true
-            
-            // Start monitoring audio levels for visualization
-            audioLevelMonitor.startMonitoring(audioRecorder: audioRecorder!)
-            
-        } catch let recordingError {
-            self.error = .recordingError("Could not start recording: \(recordingError.localizedDescription)")
-        }
+
+        let recorder = try AVAudioRecorder(url: url, settings: settings)
+        recorder.isMeteringEnabled = true
+        recorder.prepareToRecord()
+        recorder.record()
+
+        audioRecorder = recorder
+        audioLevelMonitor.startMonitoring(audioRecorder: recorder)
     }
-    
+
+    /// Stops recording and returns the audio file URL.
+    /// Caller can delete the file after it’s consumed (recommended).
     func stopRecording() -> URL? {
+        guard isRecording else { return nil }
+
         audioRecorder?.stop()
-        isRecording = false
-        
-        // Stop monitoring audio levels
         audioLevelMonitor.stopMonitoring()
-        
-        // Reset audio session to allow other audio operations
-        resetAudioSession()
-        
-        return audioFilePath
-    }
-    
-    private func resetAudioSession() {
+
+        isRecording = false
+
+        let url = audioFileURL
+        audioRecorder = nil
+        audioFileURL = nil
+
         do {
-            // Reset to a more flexible category after recording
-            try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-            // Don't deactivate the session completely, just reset the category
+            try AudioSessionController.shared.deactivate()
         } catch {
-            print("Failed to reset audio session: \(error.localizedDescription)")
+            // Not fatal; ignore.
         }
-    }
-    
-    deinit {
-        // Clean up audio session when service is deallocated
-        do {
-            try recordingSession?.setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("Failed to deactivate audio session: \(error.localizedDescription)")
-        }
+
+        return url
     }
 }

@@ -29,6 +29,8 @@
 		54CBD1352ED76A7C00FFD63B /* InterpreterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1342ED76A7C00FFD63B /* InterpreterTab.swift */; };
 		54CBD1372ED76F1C00FFD63B /* SettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1362ED76F1C00FFD63B /* SettingsTab.swift */; };
 		54CBD1392ED7733700FFD63B /* ReusableComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD1382ED7733700FFD63B /* ReusableComponents.swift */; };
+		54F6C1882EEFB315007F3A4C /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54F6C1872EEFB315007F3A4C /* KeychainStore.swift */; };
+		54F6C18A2EEFB353007F3A4C /* AudioSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54F6C1892EEFB353007F3A4C /* AudioSessionController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +57,8 @@
 		54CBD1342ED76A7C00FFD63B /* InterpreterTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterpreterTab.swift; sourceTree = "<group>"; };
 		54CBD1362ED76F1C00FFD63B /* SettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTab.swift; sourceTree = "<group>"; };
 		54CBD1382ED7733700FFD63B /* ReusableComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReusableComponents.swift; sourceTree = "<group>"; };
+		54F6C1872EEFB315007F3A4C /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		54F6C1892EEFB353007F3A4C /* AudioSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +134,8 @@
 			isa = PBXGroup;
 			children = (
 				5485189D2D9088860010B445 /* OpenAIService.swift */,
+				54F6C1872EEFB315007F3A4C /* KeychainStore.swift */,
+				54F6C1892EEFB353007F3A4C /* AudioSessionController.swift */,
 				548518A92D90901C0010B445 /* AudioService.swift */,
 			);
 			path = Services;
@@ -232,6 +238,7 @@
 				548518A82D908ACF0010B445 /* ContentView.swift in Sources */,
 				548518B12D90B1CA0010B445 /* AudioLevelMonitor.swift in Sources */,
 				5485189E2D9088860010B445 /* OpenAIService.swift in Sources */,
+				54F6C18A2EEFB353007F3A4C /* AudioSessionController.swift in Sources */,
 				54CBD1352ED76A7C00FFD63B /* InterpreterTab.swift in Sources */,
 				54CBD1332ED76A2900FFD63B /* TranslateTab.swift in Sources */,
 				54CBD1372ED76F1C00FFD63B /* SettingsTab.swift in Sources */,
@@ -241,6 +248,7 @@
 				548518B32D90B2720010B445 /* WaveformView.swift in Sources */,
 				548518AA2D90901C0010B445 /* AudioService.swift in Sources */,
 				547521F22DE41A22002311FE /* CorrectionManager.swift in Sources */,
+				54F6C1882EEFB315007F3A4C /* KeychainStore.swift in Sources */,
 				548518A62D908A920010B445 /* OpenAIModels.swift in Sources */,
 				54BD96602DEDF6C600B25BBF /* OnboardingView.swift in Sources */,
 			);
