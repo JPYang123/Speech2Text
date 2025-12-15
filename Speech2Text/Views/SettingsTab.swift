@@ -16,7 +16,7 @@ struct SettingsTab: View {
     @State private var showOnboarding = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Quick Access")) {
                     NavigationLink(destination: ManageCorrectionsView()) {

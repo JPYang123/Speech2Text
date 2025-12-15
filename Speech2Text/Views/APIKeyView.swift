@@ -6,7 +6,7 @@ struct APIKeyView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("OpenAI API Key")) {
                     Text("Create a key at platform.openai.com and paste it below.")

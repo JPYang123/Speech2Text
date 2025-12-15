@@ -6,7 +6,7 @@ struct ManageCorrectionsView: View {
     @State private var correct = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Add Correction")) {
                     TextField("Incorrect", text: $incorrect)

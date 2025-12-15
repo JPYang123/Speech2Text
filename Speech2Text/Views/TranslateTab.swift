@@ -13,7 +13,7 @@ struct TranslateTab: View {
     @ObservedObject var viewModel: SpeechViewModel
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Language Selector

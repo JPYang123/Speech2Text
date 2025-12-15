@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var showOnboarding = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     Button("Manage Corrections") { showCorrections = true }
