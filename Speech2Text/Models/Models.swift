@@ -48,7 +48,7 @@ struct APIConfig {
 
 struct ModelConfig {
     static let transcriptionModel = "gpt-4o-mini-transcribe"
-    static let llmModel = "gpt-4o-mini"
+    static let llmModel = "gpt-6-luna"
     static let ttsModel = "gpt-4o-mini-tts"
 }
 
