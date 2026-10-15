@@ -32,6 +32,8 @@ struct ChatCompletionRequest: Codable {
     let model: String
     let messages: [ChatMessage]
     let temperature: Double?
+    // Keep translation and editing non-reasoning; preserves temperature support.
+    var reasoning_effort: String = "none"
 }
 
 struct ChatCompletionResponse: Decodable {
